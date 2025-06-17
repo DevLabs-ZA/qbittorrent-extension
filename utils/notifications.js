@@ -3,8 +3,8 @@ class NotificationManager {
         const notificationOptions = {
             type: 'basic',
             iconUrl: iconUrl || chrome.runtime.getURL('icons/icon48.png'),
-            title: title,
-            message: message
+            title,
+            message
         };
 
         chrome.notifications.create(notificationOptions);

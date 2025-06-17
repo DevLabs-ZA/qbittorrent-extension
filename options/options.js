@@ -58,18 +58,33 @@ async function loadServerCategories() {
             const categorySelect = document.getElementById('default-category');
             const currentValue = categorySelect.value;
 
-            // Clear existing options except "None"
-            categorySelect.innerHTML = '<option value="">None</option>';
+            // Clear existing options safely using DOM manipulation
+            while (categorySelect.firstChild) {
+                categorySelect.removeChild(categorySelect.firstChild);
+            }
+            
+            // Add "None" option safely
+            const noneOption = document.createElement('option');
+            noneOption.value = '';
+            noneOption.textContent = 'None';
+            categorySelect.appendChild(noneOption);
 
-            // Add categories from server
+            // Add categories from server with input validation
             Object.keys(response.info.categories).forEach(category => {
-                const option = document.createElement('option');
-                option.value = category;
-                option.textContent = category;
-                categorySelect.appendChild(option);
+                // Sanitize category name to prevent XSS
+                const sanitizedCategory = typeof InputValidator !== 'undefined'
+                    ? InputValidator.sanitizeCategory(category)
+                    : category.replace(/[<>&"']/g, ''); // Fallback sanitization
+                    
+                if (sanitizedCategory) { // Only add non-empty categories
+                    const option = document.createElement('option');
+                    option.value = sanitizedCategory;
+                    option.textContent = sanitizedCategory;
+                    categorySelect.appendChild(option);
+                }
             });
 
-            // Restore selected value
+            // Restore selected value safely
             categorySelect.value = currentValue;
         }
     } catch (error) {
@@ -209,7 +224,7 @@ async function saveSettings() {
 
         // Validate and sanitize input data
         const validation = InputValidator.validateFormData(formData);
-        
+
         if (!validation.isValid) {
             showNotification('error', `Validation failed: ${validation.errors.join(', ')}`);
             return;
@@ -233,9 +248,9 @@ async function saveSettings() {
 
         // Save other settings to sync storage
         const syncSettings = {};
-        if (settings.options) syncSettings.options = settings.options;
-        if (settings.siteSettings) syncSettings.siteSettings = settings.siteSettings;
-        if (settings.advanced) syncSettings.advanced = settings.advanced;
+        if (settings.options) {syncSettings.options = settings.options;}
+        if (settings.siteSettings) {syncSettings.siteSettings = settings.siteSettings;}
+        if (settings.advanced) {syncSettings.advanced = settings.advanced;}
 
         await chrome.storage.sync.set(syncSettings);
         currentSettings = { ...currentSettings, ...settings };
@@ -330,7 +345,7 @@ function exportSettings() {
 
 async function importSettings(event) {
     const file = event.target.files[0];
-    if (!file) return;
+    if (!file) {return;}
 
     try {
         const text = await file.text();

@@ -15,13 +15,26 @@ importScripts(
 // Initialize rate limiter
 const rateLimiter = new RateLimiter();
 
+// Initialize security modules to ensure they are active
+const securityModules = {
+    errorHandler: typeof ErrorHandler !== 'undefined' ? ErrorHandler : null,
+    validator: typeof Validator !== 'undefined' ? Validator : null,
+    diagnostics: typeof Diagnostics !== 'undefined' ? Diagnostics : null
+};
+
 // Initialize logging and monitoring
-// Initialize logging and monitoring (use global window references in service worker)
 if (typeof Logger !== 'undefined') {
-    Logger.info('Background service worker loaded');
+    Logger.info('Background service worker loaded', {
+        securityModules: Object.keys(securityModules).filter(key => securityModules[key] !== null)
+    });
 }
 if (typeof Monitor !== 'undefined') {
     Monitor.start();
+}
+
+// Initialize diagnostics if available
+if (securityModules.diagnostics) {
+    securityModules.diagnostics.initialize();
 }
 
 // Initialize extension
@@ -75,7 +88,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 async function handleMessage(message, sender, sendResponse) {
     const timer = window.Logger ? window.Logger.startTimer('message_handling') : null;
-    
+
     try {
         // Log incoming message
         if (window.Logger) {
@@ -149,9 +162,9 @@ async function handleMessage(message, sender, sendResponse) {
 async function sendSingleTorrent(url) {
     try {
         const result = await sendTorrent(url);
-        showNotification('success', `Torrent sent successfully: ${result.name || 'Unknown'}`)
+        showNotification('success', `Torrent sent successfully: ${result.name || 'Unknown'}`);
     } catch (error) {
-        showNotification('error', `Failed to send torrent: ${error.message}`)
+        showNotification('error', `Failed to send torrent: ${error.message}`);
     }
 }
 
@@ -207,6 +220,6 @@ function showNotification(type, message) {
         type: 'basic',
         iconUrl: icons[type],
         title: 'qBittorrent Integration',
-        message: message
+        message
     });
 }

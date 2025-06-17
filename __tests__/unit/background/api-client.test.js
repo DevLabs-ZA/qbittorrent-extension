@@ -11,7 +11,7 @@ describe('API Client', () => {
   beforeEach(() => {
     // Reset mocks
     jest.clearAllMocks();
-    
+
     // Mock Chrome APIs
     mockChrome = {
       storage: {
@@ -479,7 +479,7 @@ describe('API Client', () => {
 
     it('should send magnet link successfully', async () => {
       const magnetUrl = 'magnet:?xt=urn:btih:abc123&dn=Test%20Torrent';
-      
+
       global.InputValidator.validateMagnetLink.mockReturnValue(true);
       global.InputValidator.validateTorrentUrl.mockReturnValue(false);
 
@@ -500,26 +500,26 @@ describe('API Client', () => {
 
     it('should send torrent file successfully', async () => {
       const torrentUrl = 'http://example.com/test.torrent';
-      
+
       global.InputValidator.validateMagnetLink.mockReturnValue(false);
       global.InputValidator.validateTorrentUrl.mockReturnValue(true);
 
       // Mock torrent file fetch
       const mockTorrentBlob = new Blob(['fake torrent data'], { type: 'application/x-bittorrent' });
       Object.defineProperty(mockTorrentBlob, 'size', { value: 1024 });
-      
+
       const mockTorrentResponse = {
         blob: jest.fn().mockResolvedValue(mockTorrentBlob)
       };
-      
+
       const mockApiResponse = {
         ok: true,
         text: jest.fn().mockResolvedValue('Ok.')
       };
-      
+
       mockFetch
         .mockResolvedValueOnce(mockTorrentResponse) // First call for torrent file
-        .mockResolvedValueOnce(mockApiResponse);    // Second call for API
+        .mockResolvedValueOnce(mockApiResponse); // Second call for API
 
       const result = await global.testApiClient.sendTorrent(torrentUrl);
 
@@ -531,7 +531,7 @@ describe('API Client', () => {
 
     it('should reject invalid torrent URL', async () => {
       const invalidUrl = 'not-a-valid-url';
-      
+
       global.InputValidator.validateMagnetLink.mockReturnValue(false);
       global.InputValidator.validateTorrentUrl.mockReturnValue(false);
 
@@ -542,18 +542,18 @@ describe('API Client', () => {
 
     it('should reject torrent file that is too large', async () => {
       const torrentUrl = 'http://example.com/large.torrent';
-      
+
       global.InputValidator.validateMagnetLink.mockReturnValue(false);
       global.InputValidator.validateTorrentUrl.mockReturnValue(true);
 
       // Mock large torrent file
       const mockLargeBlob = new Blob(['fake large torrent data']);
       Object.defineProperty(mockLargeBlob, 'size', { value: 11 * 1024 * 1024 }); // 11MB
-      
+
       const mockTorrentResponse = {
         blob: jest.fn().mockResolvedValue(mockLargeBlob)
       };
-      
+
       mockFetch.mockResolvedValueOnce(mockTorrentResponse);
 
       await expect(
@@ -569,7 +569,7 @@ describe('API Client', () => {
         paused: true,
         skipHashCheck: true
       };
-      
+
       global.InputValidator.validateMagnetLink.mockReturnValue(true);
 
       const mockApiResponse = {
@@ -581,7 +581,7 @@ describe('API Client', () => {
       await global.testApiClient.sendTorrent(magnetUrl, customOptions);
 
       // Verify the form data would contain custom options
-      const fetchCall = mockFetch.mock.calls.find(call => 
+      const fetchCall = mockFetch.mock.calls.find(call =>
         call[0].includes('torrents/add')
       );
       expect(fetchCall).toBeDefined();

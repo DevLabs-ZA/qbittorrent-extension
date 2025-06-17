@@ -233,15 +233,15 @@ describe('Popup Component', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     // Reset element states
     Object.values(mockElements).forEach(element => {
-      if (element.value !== undefined) element.value = '';
-      if (element.checked !== undefined) element.checked = false;
-      if (element.textContent !== undefined) element.textContent = '';
-      if (element.className !== undefined) element.className = '';
-      if (element.disabled !== undefined) element.disabled = false;
-      if (element.innerHTML !== undefined) element.innerHTML = '';
+      if (element.value !== undefined) {element.value = '';}
+      if (element.checked !== undefined) {element.checked = false;}
+      if (element.textContent !== undefined) {element.textContent = '';}
+      if (element.className !== undefined) {element.className = '';}
+      if (element.disabled !== undefined) {element.disabled = false;}
+      if (element.innerHTML !== undefined) {element.innerHTML = '';}
     });
   });
 
@@ -533,7 +533,7 @@ describe('Popup Component', () => {
       mockChrome.storage.sync.get.mockResolvedValue({
         options: { savePath: '/torrents', paused: false }
       });
-      
+
       mockChrome.runtime.sendMessage.mockImplementation((message) => {
         if (message.action === 'TEST_CONNECTION') {
           return Promise.resolve({
@@ -582,7 +582,7 @@ describe('Popup Component', () => {
       expect(mockElements.connectionStatus.textContent).toBe('Error');
       expect(mockElements.torrentCount.textContent).toBe('0');
       expect(consoleSpy).toHaveBeenCalled();
-      
+
       consoleSpy.mockRestore();
     });
   });

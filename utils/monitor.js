@@ -180,20 +180,20 @@ class Monitor {
      */
     async _checkExtensionHealth() {
         try {
-            const healthy = typeof chrome !== 'undefined' && 
-                           chrome.runtime && 
+            const healthy = typeof chrome !== 'undefined' &&
+                           chrome.runtime &&
                            !chrome.runtime.lastError;
 
             const context = {
-                runtimeAvailable: typeof chrome !== 'undefined' && !!chrome.runtime,
+                runtimeAvailable: typeof chrome !== 'undefined' && Boolean(chrome.runtime),
                 lastError: chrome.runtime?.lastError?.message || null,
                 extensionId: chrome.runtime?.id || null
             };
 
             return { healthy, context };
         } catch (error) {
-            return { 
-                healthy: false, 
+            return {
+                healthy: false,
                 error: error.message,
                 context: { error: 'Extension context check failed' }
             };
@@ -207,8 +207,8 @@ class Monitor {
     async _checkStorageHealth() {
         try {
             if (!chrome.storage) {
-                return { 
-                    healthy: false, 
+                return {
+                    healthy: false,
                     context: { error: 'Storage API not available' }
                 };
             }
@@ -233,8 +233,8 @@ class Monitor {
                 }
             };
         } catch (error) {
-            return { 
-                healthy: false, 
+            return {
+                healthy: false,
                 error: error.message,
                 context: { error: 'Storage health check failed' }
             };
@@ -248,13 +248,13 @@ class Monitor {
     _checkMemoryHealth() {
         try {
             if (typeof performance === 'undefined' || !performance.memory) {
-                return { 
-                    healthy: true, 
+                return {
+                    healthy: true,
                     context: { error: 'Memory API not available' }
                 };
             }
 
-            const memory = performance.memory;
+            const {memory} = performance;
             const usedMB = memory.usedJSHeapSize / (1024 * 1024);
             const totalMB = memory.totalJSHeapSize / (1024 * 1024);
             const limitMB = memory.jsHeapSizeLimit / (1024 * 1024);
@@ -271,8 +271,8 @@ class Monitor {
                 }
             };
         } catch (error) {
-            return { 
-                healthy: false, 
+            return {
+                healthy: false,
                 error: error.message,
                 context: { error: 'Memory health check failed' }
             };
@@ -329,8 +329,8 @@ class Monitor {
                 };
             }
         } catch (error) {
-            return { 
-                healthy: false, 
+            return {
+                healthy: false,
                 error: error.message,
                 context: { error: 'API health check failed' }
             };
@@ -364,7 +364,7 @@ class Monitor {
      */
     async _checkStorage() {
         try {
-            if (!chrome.storage) return;
+            if (!chrome.storage) {return;}
 
             const bytesInUse = await chrome.storage.local.getBytesInUse();
             const maxBytes = Monitor.HEALTH_THRESHOLDS.STORAGE_MB * 1024 * 1024;
@@ -399,10 +399,10 @@ class Monitor {
     async _checkConnection() {
         try {
             const settings = await this._getServerSettings();
-            if (!settings || !settings.url) return;
+            if (!settings || !settings.url) {return;}
 
             const startTime = performance.now();
-            
+
             try {
                 const response = await fetch(`${settings.url}/api/v2/app/version`, {
                     method: 'HEAD',
@@ -493,7 +493,7 @@ class Monitor {
      */
     static getPerformanceMetrics() {
         const instance = Monitor.getInstance();
-        
+
         const summary = {
             uptime: Date.now() - instance.startTime,
             memoryUsage: instance._getMemoryMetrics(),
@@ -533,10 +533,10 @@ class Monitor {
      */
     _getMetricsSummary() {
         const summary = {};
-        
+
         for (const [name, history] of this.metrics) {
-            if (history.length === 0) continue;
-            
+            if (history.length === 0) {continue;}
+
             const values = history.map(m => m.value);
             summary[name] = {
                 current: values[values.length - 1],
@@ -546,7 +546,7 @@ class Monitor {
                 count: values.length
             };
         }
-        
+
         return summary;
     }
 
@@ -556,7 +556,7 @@ class Monitor {
      */
     static exportData() {
         const instance = Monitor.getInstance();
-        
+
         return {
             healthStatus: instance.lastHealthCheck,
             performanceHistory: instance.performanceHistory,
@@ -607,7 +607,7 @@ class Monitor {
 // Auto-start monitoring when loaded in background context
 if (typeof window !== 'undefined') {
     window.Monitor = Monitor;
-    
+
     // Start monitoring if this is likely a background script
     if (typeof chrome !== 'undefined' && chrome.runtime && !window.location) {
         Monitor.start();

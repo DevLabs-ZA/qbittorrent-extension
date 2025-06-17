@@ -23,7 +23,7 @@ global.chrome = {
     openOptionsPage: sinon.stub(),
     getURL: sinon.stub().callsFake((path) => `chrome-extension://test-id/${path}`)
   },
-  
+
   storage: {
     sync: {
       get: sinon.stub(),
@@ -38,14 +38,14 @@ global.chrome = {
       clear: sinon.stub()
     }
   },
-  
+
   tabs: {
     query: sinon.stub(),
     sendMessage: sinon.stub(),
     create: sinon.stub(),
     update: sinon.stub()
   },
-  
+
   contextMenus: {
     create: sinon.stub(),
     update: sinon.stub(),
@@ -54,13 +54,13 @@ global.chrome = {
       addListener: sinon.stub()
     }
   },
-  
+
   commands: {
     onCommand: {
       addListener: sinon.stub()
     }
   },
-  
+
   notifications: {
     create: sinon.stub(),
     clear: sinon.stub(),
@@ -68,7 +68,7 @@ global.chrome = {
       addListener: sinon.stub()
     }
   },
-  
+
   webRequest: {
     onBeforeRequest: {
       addListener: sinon.stub(),
@@ -110,11 +110,11 @@ global.Blob = class MockBlob {
     this.type = options?.type || '';
     this.size = parts?.reduce((size, part) => size + part.length, 0) || 0;
   }
-  
+
   text() {
     return Promise.resolve(this.parts.join(''));
   }
-  
+
   arrayBuffer() {
     return Promise.resolve(new ArrayBuffer(this.size));
   }
@@ -130,28 +130,28 @@ global.FormData = class MockFormData {
   constructor() {
     this.data = new Map();
   }
-  
+
   append(key, value, filename) {
     if (!this.data.has(key)) {
       this.data.set(key, []);
     }
     this.data.get(key).push({ value, filename });
   }
-  
+
   get(key) {
     const values = this.data.get(key);
     return values ? values[0].value : null;
   }
-  
+
   getAll(key) {
     const values = this.data.get(key);
     return values ? values.map(v => v.value) : [];
   }
-  
+
   has(key) {
     return this.data.has(key);
   }
-  
+
   delete(key) {
     this.data.delete(key);
   }
@@ -172,13 +172,9 @@ global.console = {
 };
 
 // Mock setTimeout/setInterval for timer tests
-global.setTimeout = sinon.stub().callsFake((fn, delay) => {
-  return originalConsole.setTimeout ? originalConsole.setTimeout(fn, delay) : setTimeout(fn, delay);
-});
+global.setTimeout = sinon.stub().callsFake((fn, delay) => originalConsole.setTimeout ? originalConsole.setTimeout(fn, delay) : setTimeout(fn, delay));
 
-global.setInterval = sinon.stub().callsFake((fn, delay) => {
-  return originalConsole.setInterval ? originalConsole.setInterval(fn, delay) : setInterval(fn, delay);
-});
+global.setInterval = sinon.stub().callsFake((fn, delay) => originalConsole.setInterval ? originalConsole.setInterval(fn, delay) : setInterval(fn, delay));
 
 // Mock DOM APIs for content script tests
 Object.defineProperty(window, 'location', {
@@ -198,15 +194,15 @@ global.MutationObserver = class MockMutationObserver {
     this.callback = callback;
     this.observations = [];
   }
-  
+
   observe(target, options) {
     this.observations.push({ target, options });
   }
-  
+
   disconnect() {
     this.observations = [];
   }
-  
+
   takeRecords() {
     return [];
   }
@@ -225,7 +221,7 @@ expect.extend({
   toHaveBeenCalledWithChromeAPI(received, apiPath, expectedArgs) {
     const parts = apiPath.split('.');
     let api = global.chrome;
-    
+
     for (const part of parts) {
       if (!api[part]) {
         return {
@@ -235,26 +231,26 @@ expect.extend({
       }
       api = api[part];
     }
-    
+
     const pass = api.calledWith ? api.calledWith(...expectedArgs) : false;
-    
+
     return {
-      message: () => pass 
+      message: () => pass
         ? `Expected ${apiPath} not to be called with ${JSON.stringify(expectedArgs)}`
         : `Expected ${apiPath} to be called with ${JSON.stringify(expectedArgs)}`,
       pass
     };
   },
-  
+
   /**
    * Matcher to check if storage was set with specific data
    */
   toHaveStoredData(received, storageType, expectedData) {
     const storage = global.chrome.storage[storageType];
     const pass = storage.set.calledWith(expectedData);
-    
+
     return {
-      message: () => pass 
+      message: () => pass
         ? `Expected ${storageType} storage not to be set with ${JSON.stringify(expectedData)}`
         : `Expected ${storageType} storage to be set with ${JSON.stringify(expectedData)}`,
       pass
@@ -278,7 +274,7 @@ global.testUtils = {
       }
     });
   },
-  
+
   /**
    * Create mock DOM element with specified attributes
    */
@@ -289,7 +285,7 @@ global.testUtils = {
     });
     return element;
   },
-  
+
   /**
    * Wait for async operations in tests
    */
@@ -310,7 +306,7 @@ beforeEach(() => {
   // Reset all mocks before each test
   sinon.restore();
   global.testUtils.resetChromeMocks();
-  
+
   // Clear DOM
   document.body.innerHTML = '';
   document.head.innerHTML = '';

@@ -15,7 +15,7 @@
  * const decrypted = await CryptoManager.decrypt(encrypted, key);
  */
 class CryptoManager {
-    
+
     /**
      * Generates a new AES-GCM 256-bit encryption key
      * Uses Web Crypto API for cryptographically secure key generation
@@ -102,11 +102,11 @@ class CryptoManager {
     static async encrypt(data, key) {
         const encoder = new TextEncoder();
         const iv = crypto.getRandomValues(new Uint8Array(12));
-        
+
         const encrypted = await crypto.subtle.encrypt(
             {
                 name: 'AES-GCM',
-                iv: iv,
+                iv,
             },
             key,
             encoder.encode(data)
@@ -232,22 +232,22 @@ class SecureStorageManager {
      * @since 1.0.0
      */
     static async initializeEncryption() {
-        let settings = await chrome.storage.local.get(['encryptionKey', 'salt']);
-        
+        const settings = await chrome.storage.local.get(['encryptionKey', 'salt']);
+
         if (!settings.encryptionKey || !settings.salt) {
             // Generate new encryption key and salt
             const salt = CryptoManager.generateSalt();
             const key = await CryptoManager.generateKey();
             const exportedKey = await CryptoManager.exportKey(key);
-            
+
             await chrome.storage.local.set({
                 encryptionKey: exportedKey,
-                salt: salt
+                salt
             });
-            
+
             return key;
         }
-        
+
         return await CryptoManager.importKey(settings.encryptionKey);
     }
 
@@ -268,7 +268,7 @@ class SecureStorageManager {
     static async encryptAndStore(key, data) {
         const encryptionKey = await this.initializeEncryption();
         const encrypted = await CryptoManager.encrypt(JSON.stringify(data), encryptionKey);
-        
+
         await chrome.storage.local.set({
             [key]: encrypted
         });
@@ -292,11 +292,11 @@ class SecureStorageManager {
     static async decryptAndRetrieve(key) {
         const encryptionKey = await this.initializeEncryption();
         const result = await chrome.storage.local.get([key]);
-        
+
         if (!result[key]) {
             return null;
         }
-        
+
         try {
             const decrypted = await CryptoManager.decrypt(result[key], encryptionKey);
             return JSON.parse(decrypted);
@@ -332,16 +332,16 @@ class SecureStorageManager {
             password: serverConfig.password,
             username: serverConfig.username
         };
-        
+
         await this.encryptAndStore('secure_credentials', sensitiveData);
-        
+
         // Store non-sensitive data in sync storage
         const publicData = {
             url: serverConfig.url,
             useHttps: serverConfig.useHttps,
             customPort: serverConfig.customPort
         };
-        
+
         await chrome.storage.sync.set({ server: publicData });
     }
 
@@ -366,11 +366,11 @@ class SecureStorageManager {
     static async getCredentials() {
         const publicData = await chrome.storage.sync.get(['server']);
         const sensitiveData = await this.decryptAndRetrieve('secure_credentials');
-        
+
         if (!sensitiveData) {
             return publicData.server || {};
         }
-        
+
         return {
             ...publicData.server,
             ...sensitiveData

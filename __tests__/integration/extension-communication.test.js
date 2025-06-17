@@ -65,7 +65,7 @@ describe('Extension Communication Integration', () => {
   describe('Content Script to Background Communication', () => {
     it('should send torrent from content script to background', async () => {
       const torrentUrl = 'magnet:?xt=urn:btih:abc123def456789012345678901234567890abcd';
-      
+
       // Mock successful background response
       mockChrome.runtime.sendMessage.mockResolvedValue({
         success: true,
@@ -88,7 +88,7 @@ describe('Extension Communication Integration', () => {
 
     it('should handle background script error responses', async () => {
       const torrentUrl = 'invalid-url';
-      
+
       // Mock error response
       mockChrome.runtime.sendMessage.mockResolvedValue({
         success: false,
@@ -117,7 +117,7 @@ describe('Extension Communication Integration', () => {
 
       // Simulate background script requesting torrents from active tab
       mockChrome.tabs.query.mockResolvedValue([{ id: 1 }]);
-      
+
       const [tab] = await mockChrome.tabs.query({ active: true, currentWindow: true });
       const response = await mockChrome.tabs.sendMessage(tab.id, { action: 'GET_ALL_TORRENTS' });
 

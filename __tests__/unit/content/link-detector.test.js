@@ -206,7 +206,7 @@ describe('TorrentLinkDetector', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     detector = new TorrentLinkDetector();
-    
+
     // Reset mock implementations
     mockDocument.querySelectorAll.mockReturnValue([]);
     mockDocument.createTreeWalker.mockReturnValue({
@@ -499,7 +499,7 @@ describe('TorrentLinkDetector', () => {
       mockDocument.querySelectorAll
         .mockReturnValueOnce([mockElement])
         .mockReturnValueOnce([]);
-      
+
       mockDocument.createTreeWalker.mockReturnValue({
         nextNode: jest.fn().mockReturnValue(null)
       });
@@ -526,7 +526,7 @@ describe('TorrentLinkDetector', () => {
       mockDocument.querySelectorAll
         .mockReturnValueOnce([mockElement])
         .mockReturnValueOnce([]);
-      
+
       mockDocument.createTreeWalker.mockReturnValue({
         nextNode: jest.fn().mockReturnValue(null)
       });

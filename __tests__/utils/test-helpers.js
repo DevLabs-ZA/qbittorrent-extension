@@ -115,14 +115,14 @@ function createMockTabs() {
     data: tabs,
     query: jest.fn().mockImplementation((queryInfo) => {
       let filteredTabs = [...tabs];
-      
+
       if (queryInfo.active !== undefined) {
         filteredTabs = filteredTabs.filter(tab => tab.active === queryInfo.active);
       }
       if (queryInfo.currentWindow !== undefined && queryInfo.currentWindow) {
         filteredTabs = filteredTabs.filter(tab => tab.windowId === 1);
       }
-      
+
       return Promise.resolve(filteredTabs);
     }),
     sendMessage: jest.fn().mockResolvedValue({ success: true }),
@@ -185,14 +185,14 @@ function createMockResponse(data, status = 200, headers = {}) {
  */
 async function waitForCondition(condition, timeout = 1000, interval = 10) {
   const start = Date.now();
-  
+
   while (Date.now() - start < timeout) {
     if (await condition()) {
       return true;
     }
     await new Promise(resolve => setTimeout(resolve, interval));
   }
-  
+
   return false;
 }
 
@@ -233,23 +233,23 @@ function createTestTorrents(count = 5) {
  */
 function validateTestTorrent(torrent) {
   const errors = [];
-  
+
   if (!torrent.name || typeof torrent.name !== 'string') {
     errors.push('Invalid or missing torrent name');
   }
-  
+
   if (torrent.magnetUrl && !torrent.magnetUrl.startsWith('magnet:')) {
     errors.push('Invalid magnet URL format');
   }
-  
+
   if (torrent.torrentUrl && !torrent.torrentUrl.includes('.torrent')) {
     errors.push('Invalid torrent URL format');
   }
-  
+
   if (torrent.size && (typeof torrent.size !== 'number' || torrent.size < 0)) {
     errors.push('Invalid torrent size');
   }
-  
+
   return {
     isValid: errors.length === 0,
     errors
@@ -262,7 +262,7 @@ function validateTestTorrent(torrent) {
  */
 function createPerformanceHelpers() {
   const measurements = new Map();
-  
+
   return {
     start: (label) => {
       measurements.set(label, { start: performance.now() });
@@ -300,7 +300,7 @@ function createPerformanceHelpers() {
 function createMockBrowser() {
   const storage = createMockStorage();
   const tabs = createMockTabs();
-  
+
   return {
     runtime: {
       sendMessage: jest.fn(),
@@ -351,7 +351,7 @@ const generators = {
     const name = `Test Torrent ${Math.floor(Math.random() * 1000)}`;
     return `magnet:?xt=urn:btih:${hash}&dn=${encodeURIComponent(name)}`;
   },
-  
+
   /**
    * Generates random torrent file URL
    * @returns {string} Random torrent file URL
@@ -360,7 +360,7 @@ const generators = {
     const id = Math.floor(Math.random() * 10000);
     return `https://example.com/torrents/file-${id}.torrent`;
   },
-  
+
   /**
    * Generates random server configuration
    * @returns {Object} Random server config

@@ -1,5 +1,9 @@
-let authCookie = null;
-let lastAuthTime = 0;
+// Atomic operations for authentication cookie handling to prevent race conditions
+const authState = {
+    cookie: null,
+    lastAuthTime: 0,
+    isAuthenticating: false // Flag to prevent concurrent authentication
+};
 const AUTH_TIMEOUT = 30 * 60 * 1000;
 
 async function getSettings() {
@@ -17,7 +21,7 @@ async function getSettings() {
         const result = await chrome.storage.sync.get(['server']);
         serverConfig = result.server || {};
     }
-    
+
     const result = await chrome.storage.sync.get(['options']);
     return {
         server: serverConfig,
@@ -27,7 +31,7 @@ async function getSettings() {
 
 async function authenticate() {
     const timer = window.Logger ? window.Logger.startTimer('authentication') : null;
-    
+
     try {
         const { server } = await getSettings();
 
@@ -39,16 +43,35 @@ async function authenticate() {
             throw error;
         }
 
-        // Check if we have a valid auth cookie
-        if (authCookie && (Date.now() - lastAuthTime) < AUTH_TIMEOUT) {
+        // Check if we have a valid auth cookie (atomic check to prevent race conditions)
+        if (authState.cookie && (Date.now() - authState.lastAuthTime) < AUTH_TIMEOUT) {
             if (window.Logger) {
                 window.Logger.debug('Using cached authentication', {
-                    cacheAge: Date.now() - lastAuthTime
+                    cacheAge: Date.now() - authState.lastAuthTime
                 });
             }
-            if (timer) timer.end({ success: true, cached: true });
-            return authCookie;
+            if (timer) {timer.end({ success: true, cached: true });}
+            return authState.cookie;
         }
+
+        // Prevent concurrent authentication attempts
+        if (authState.isAuthenticating) {
+            // Wait for ongoing authentication to complete
+            let retries = 0;
+            while (authState.isAuthenticating && retries < 50) { // Max 5 seconds wait
+                await new Promise(resolve => {
+                    setTimeout(resolve, 100);
+                });
+                retries++;
+            }
+            // Return the result of the ongoing authentication
+            if (authState.cookie && (Date.now() - authState.lastAuthTime) < AUTH_TIMEOUT) {
+                return authState.cookie;
+            }
+        }
+
+        // Set authentication in progress flag
+        authState.isAuthenticating = true;
 
         if (window.Logger) {
             window.Logger.info('Authenticating with qBittorrent server', {
@@ -78,25 +101,25 @@ async function authenticate() {
             throw new Error('Invalid credentials');
         }
 
-        // Extract cookie from response headers
+        // Extract cookie from response headers (atomic update)
         const setCookieHeader = response.headers.get('set-cookie');
         if (setCookieHeader) {
-            authCookie = setCookieHeader.split(';')[0];
-            lastAuthTime = Date.now();
+            authState.cookie = setCookieHeader.split(';')[0];
+            authState.lastAuthTime = Date.now();
         }
 
-        if (timer) timer.end({ success: true, cached: false });
-        
+        if (timer) {timer.end({ success: true, cached: false });}
+
         if (window.Logger) {
             window.Logger.info('Authentication successful', {
                 serverUrl: server.url
             });
         }
 
-        return authCookie;
+        return authState.cookie;
     } catch (error) {
-        if (timer) timer.end({ success: false, error: error.message });
-        
+        if (timer) {timer.end({ success: false, error: error.message });}
+
         if (window.ErrorHandler) {
             const { server: errorServer } = await getSettings().catch(() => ({ server: {} }));
             window.ErrorHandler.handle(error, 'authentication', {
@@ -106,9 +129,12 @@ async function authenticate() {
         } else {
             console.error('Authentication error:', error);
         }
-        
+
         // Don't expose internal error details
         throw new Error('Authentication failed. Please check your credentials.');
+    } finally {
+        // Always clear the authentication flag to prevent deadlock
+        authState.isAuthenticating = false;
     }
 }
 
@@ -161,12 +187,12 @@ async function sendTorrent(torrentUrl, customOptions = {}) {
         // Handle .torrent file URL
         const torrentResponse = await fetch(torrentUrl);
         const torrentBlob = await torrentResponse.blob();
-        
+
         // Validate blob size (prevent excessively large files)
         if (torrentBlob.size > 10 * 1024 * 1024) { // 10MB limit
             throw new Error('Torrent file too large');
         }
-        
+
         formData.append('torrents', torrentBlob, 'download.torrent');
     }
 
@@ -250,10 +276,10 @@ function extractTorrentName(url) {
     if (url.startsWith('magnet:')) {
         const match = url.match(/dn=([^&]+)/);
         return match ? decodeURIComponent(match[1]) : 'Magnet Link';
-    } else {
+    }
         const urlParts = url.split('/');
         return urlParts[urlParts.length - 1].replace('.torrent', '');
-    }
+
 }
 
 // Export functions for use in service worker

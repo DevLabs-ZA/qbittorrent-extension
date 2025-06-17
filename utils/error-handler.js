@@ -106,7 +106,7 @@ class ErrorHandler {
         this.errorCounts = new Map();
         this.retryQueues = new Map();
         this.circuitBreakers = new Map();
-        
+
         ErrorHandler._instance = this;
     }
 
@@ -135,7 +135,7 @@ class ErrorHandler {
 
     _handle(error, category = null, context = {}, options = {}) {
         const errorInfo = this._analyzeError(error, category, context);
-        
+
         // Log the error
         if (typeof window !== 'undefined' && window.Logger) {
             window.Logger.error(errorInfo.message, errorInfo.originalError, {
@@ -190,10 +190,10 @@ class ErrorHandler {
      * @private
      */
     _extractMessage(error) {
-        if (typeof error === 'string') return error;
-        if (error instanceof Error) return error.message;
-        if (error && typeof error.message === 'string') return error.message;
-        if (error && typeof error.toString === 'function') return error.toString();
+        if (typeof error === 'string') {return error;}
+        if (error instanceof Error) {return error.message;}
+        if (error && typeof error.message === 'string') {return error.message;}
+        if (error && typeof error.toString === 'function') {return error.toString();}
         return 'Unknown error occurred';
     }
 
@@ -203,9 +203,9 @@ class ErrorHandler {
      */
     _categorizeError(error) {
         const message = this._extractMessage(error).toLowerCase();
-        
+
         // Network-related errors
-        if (message.includes('fetch') || message.includes('network') || 
+        if (message.includes('fetch') || message.includes('network') ||
             message.includes('connection') || message.includes('cors') ||
             error instanceof TypeError && message.includes('failed to fetch')) {
             return ErrorHandler.ERROR_CATEGORIES.NETWORK;
@@ -322,8 +322,8 @@ class ErrorHandler {
             ErrorHandler.ERROR_CATEGORIES.PERMISSION
         ];
 
-        if (criticalCategories.includes(category)) return 'critical';
-        if (highCategories.includes(category)) return 'high';
+        if (criticalCategories.includes(category)) {return 'critical';}
+        if (highCategories.includes(category)) {return 'high';}
         return 'medium';
     }
 
@@ -344,7 +344,7 @@ class ErrorHandler {
      */
     _shouldCircuitBreak(category) {
         const stats = this.errorCounts.get(category);
-        if (!stats) return false;
+        if (!stats) {return false;}
 
         // Trip circuit breaker if more than 10 errors in 5 minutes
         const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
@@ -368,7 +368,7 @@ class ErrorHandler {
      */
     _attemptRecovery(errorInfo, options) {
         const retryPolicy = ErrorHandler.RETRY_POLICIES[errorInfo.category];
-        if (!retryPolicy || !options.retryFunction) return;
+        if (!retryPolicy || !options.retryFunction) {return;}
 
         const queueKey = `${errorInfo.category}_${errorInfo.id}`;
         this.retryQueues.set(queueKey, {
@@ -395,15 +395,15 @@ class ErrorHandler {
         }
 
         const delay = retryInfo.delay * Math.pow(retryInfo.backoff, retryInfo.attempts);
-        
+
         setTimeout(async () => {
             try {
                 retryInfo.attempts++;
                 await retryInfo.retryFunction(retryInfo.context);
-                
+
                 // Success - remove from retry queue
                 this.retryQueues.delete(queueKey);
-                
+
                 if (typeof window !== 'undefined' && window.Logger) {
                     window.Logger.info('Error recovery successful', {
                         queueKey,
@@ -433,7 +433,7 @@ class ErrorHandler {
         }
 
         const template = ErrorHandler.USER_MESSAGES[category] || ErrorHandler.USER_MESSAGES[ErrorHandler.ERROR_CATEGORIES.UNKNOWN];
-        
+
         return {
             ...template,
             category,
@@ -446,7 +446,7 @@ class ErrorHandler {
      * Setup global error handlers for the extension
      */
     static setupGlobalHandlers() {
-        if (ErrorHandler._globalHandlersSetup) return;
+        if (ErrorHandler._globalHandlersSetup) {return;}
 
         const instance = ErrorHandler.getInstance();
 
@@ -499,7 +499,7 @@ class ErrorHandler {
      */
     static resetCircuitBreaker(category = null) {
         const instance = ErrorHandler.getInstance();
-        
+
         if (category) {
             instance.circuitBreakers.delete(category);
         } else {

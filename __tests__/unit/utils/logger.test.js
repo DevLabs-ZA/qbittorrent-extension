@@ -48,7 +48,7 @@ describe('Logger', () => {
         mockChromeStorage.local.get.mockResolvedValue({});
         mockChromeStorage.sync.get.mockResolvedValue({});
         mockChromeStorage.local.getBytesInUse.mockResolvedValue(1024);
-        
+
         // Reset singleton
         Logger._instance = null;
         Logger._initialized = false;
@@ -76,49 +76,49 @@ describe('Logger', () => {
     describe('Log Levels', () => {
         test('should log error messages', async () => {
             const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
-            
+
             Logger.error('Test error message', new Error('Test error'));
-            
+
             expect(consoleSpy).toHaveBeenCalled();
             consoleSpy.mockRestore();
         });
 
         test('should log warning messages', async () => {
             const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
-            
+
             Logger.warn('Test warning message');
-            
+
             expect(consoleSpy).toHaveBeenCalled();
             consoleSpy.mockRestore();
         });
 
         test('should log info messages', async () => {
             const consoleSpy = jest.spyOn(console, 'info').mockImplementation();
-            
+
             Logger.info('Test info message');
-            
+
             expect(consoleSpy).toHaveBeenCalled();
             consoleSpy.mockRestore();
         });
 
         test('should log debug messages when debug level is enabled', async () => {
             const consoleSpy = jest.spyOn(console, 'debug').mockImplementation();
-            
+
             // Set debug level
             await Logger.updateSettings({ logLevel: Logger.LOG_LEVELS.DEBUG });
             Logger.debug('Test debug message');
-            
+
             expect(consoleSpy).toHaveBeenCalled();
             consoleSpy.mockRestore();
         });
 
         test('should not log debug messages when debug level is disabled', async () => {
             const consoleSpy = jest.spyOn(console, 'debug').mockImplementation();
-            
+
             // Set info level
             await Logger.updateSettings({ logLevel: Logger.LOG_LEVELS.INFO });
             Logger.debug('Test debug message');
-            
+
             expect(consoleSpy).not.toHaveBeenCalled();
             consoleSpy.mockRestore();
         });
@@ -129,7 +129,7 @@ describe('Logger', () => {
             const timer = Logger.startTimer('test_operation');
             expect(timer).toBeDefined();
             expect(typeof timer.end).toBe('function');
-            
+
             timer.end({ additional: 'context' });
             // Should not throw
         });
@@ -148,9 +148,9 @@ describe('Logger', () => {
 
         test('should record unhealthy status', () => {
             const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
-            
+
             Logger.recordHealth('test_component', false, { error: 'Component failed' });
-            
+
             expect(consoleSpy).toHaveBeenCalled();
             consoleSpy.mockRestore();
         });
@@ -159,7 +159,7 @@ describe('Logger', () => {
     describe('Diagnostics', () => {
         test('should collect diagnostic data', async () => {
             const diagnostics = await Logger.getDiagnostics();
-            
+
             expect(diagnostics).toBeDefined();
             expect(diagnostics.timestamp).toBeDefined();
             expect(diagnostics.extensionInfo).toBeDefined();
@@ -168,7 +168,7 @@ describe('Logger', () => {
 
         test('should export diagnostic data', async () => {
             const exportData = await Logger.exportDiagnostics();
-            
+
             expect(exportData).toBeDefined();
             expect(exportData.exportDate).toBeDefined();
             expect(exportData.extensionVersion).toBeDefined();
@@ -183,9 +183,9 @@ describe('Logger', () => {
                 logLevel: Logger.LOG_LEVELS.DEBUG,
                 maxLogEntries: 500
             };
-            
+
             await Logger.updateSettings(newSettings);
-            
+
             expect(mockChromeStorage.local.set).toHaveBeenCalledWith({
                 [Logger.STORAGE_KEYS.SETTINGS]: expect.objectContaining(newSettings)
             });
@@ -196,14 +196,14 @@ describe('Logger', () => {
                 logLevel: Logger.LOG_LEVELS.ERROR,
                 maxLogEntries: 2000
             };
-            
+
             mockChromeStorage.local.get.mockResolvedValue({
                 [Logger.STORAGE_KEYS.SETTINGS]: savedSettings
             });
-            
+
             const instance = Logger.getInstance();
             await instance._loadSettings();
-            
+
             expect(instance.settings.logLevel).toBe(savedSettings.logLevel);
             expect(instance.settings.maxLogEntries).toBe(savedSettings.maxLogEntries);
         });
@@ -213,14 +213,14 @@ describe('Logger', () => {
         test('should enforce log entry limits', async () => {
             const instance = Logger.getInstance();
             instance.settings.maxLogEntries = 2;
-            
+
             // Add more logs than the limit
             Logger.info('Log 1');
             Logger.info('Log 2');
             Logger.info('Log 3');
-            
+
             await instance._flushLogs();
-            
+
             expect(mockChromeStorage.local.set).toHaveBeenCalled();
         });
 
@@ -228,18 +228,18 @@ describe('Logger', () => {
             const instance = Logger.getInstance();
             const oldDate = new Date();
             oldDate.setDate(oldDate.getDate() - 10);
-            
+
             const oldLogs = [
                 { timestamp: oldDate.toISOString(), message: 'Old log' },
                 { timestamp: new Date().toISOString(), message: 'New log' }
             ];
-            
+
             mockChromeStorage.local.get.mockResolvedValue({
                 [Logger.STORAGE_KEYS.LOGS]: oldLogs
             });
-            
+
             await instance._cleanupOldLogs();
-            
+
             expect(mockChromeStorage.local.set).toHaveBeenCalledWith({
                 [Logger.STORAGE_KEYS.LOGS]: expect.arrayContaining([
                     expect.objectContaining({ message: 'New log' })
@@ -251,7 +251,7 @@ describe('Logger', () => {
     describe('Error Handling', () => {
         test('should handle storage errors gracefully', async () => {
             mockChromeStorage.local.set.mockRejectedValue(new Error('Storage error'));
-            
+
             const instance = Logger.getInstance();
             await expect(instance._flushLogs()).resolves.not.toThrow();
         });
@@ -260,10 +260,10 @@ describe('Logger', () => {
             // Temporarily remove chrome API
             const originalChrome = global.chrome;
             delete global.chrome;
-            
+
             const instance = new Logger();
             await expect(instance._loadSettings()).resolves.not.toThrow();
-            
+
             // Restore chrome API
             global.chrome = originalChrome;
         });
@@ -273,7 +273,7 @@ describe('Logger', () => {
         test('should detect component from stack trace', () => {
             const instance = Logger.getInstance();
             const component = instance._detectComponent();
-            
+
             expect(typeof component).toBe('string');
         });
 
@@ -284,9 +284,9 @@ describe('Logger', () => {
                 password: 'secret123',
                 normalData: 'value'
             };
-            
+
             const sanitized = instance._sanitizeContext(context);
-            
+
             expect(sanitized.password).toBe('[REDACTED]');
             expect(sanitized.normalData).toBe('value');
         });
@@ -296,7 +296,7 @@ describe('Logger', () => {
         test('should collect memory metrics when available', () => {
             const instance = Logger.getInstance();
             const metrics = instance._getCurrentPerformanceMetrics();
-            
+
             expect(metrics).toBeDefined();
             expect(metrics.memory).toBeDefined();
             expect(metrics.memory.usedJSHeapSize).toBeDefined();
@@ -305,12 +305,12 @@ describe('Logger', () => {
         test('should handle missing performance API', () => {
             const originalPerformance = global.performance;
             delete global.performance;
-            
+
             const instance = Logger.getInstance();
             const metrics = instance._getCurrentPerformanceMetrics();
-            
+
             expect(metrics).toBeNull();
-            
+
             global.performance = originalPerformance;
         });
     });

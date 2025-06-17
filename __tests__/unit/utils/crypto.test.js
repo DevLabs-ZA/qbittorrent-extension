@@ -13,7 +13,7 @@ describe('CryptoManager', () => {
     // Mock Web Crypto API
     mockKey = { type: 'secret', algorithm: { name: 'AES-GCM' } };
     mockArrayBuffer = new ArrayBuffer(32);
-    
+
     mockCrypto = {
       subtle: {
         generateKey: jest.fn(),
@@ -220,7 +220,7 @@ describe('CryptoManager', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     // Reset Chrome storage mocks
     global.chrome = {
       storage: {
@@ -267,7 +267,7 @@ describe('CryptoManager', () => {
     it('should export key as array', async () => {
       const mockExported = new ArrayBuffer(32);
       const expectedArray = Array.from(new Uint8Array(mockExported));
-      
+
       mockCrypto.subtle.exportKey.mockResolvedValue(mockExported);
 
       const result = await CryptoManager.exportKey(mockKey);
@@ -314,7 +314,7 @@ describe('CryptoManager', () => {
       const testData = 'sensitive data';
       const mockIv = new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
       const mockEncrypted = new ArrayBuffer(32);
-      
+
       mockCrypto.getRandomValues.mockReturnValue(mockIv);
       mockCrypto.subtle.encrypt.mockResolvedValue(mockEncrypted);
 
@@ -324,7 +324,7 @@ describe('CryptoManager', () => {
         data: Array.from(new Uint8Array(mockEncrypted)),
         iv: Array.from(mockIv)
       });
-      
+
       expect(mockCrypto.subtle.encrypt).toHaveBeenCalledWith(
         {
           name: 'AES-GCM',
@@ -352,9 +352,9 @@ describe('CryptoManager', () => {
       };
       const decryptedBuffer = new ArrayBuffer(16);
       const expectedText = 'decrypted text';
-      
+
       mockCrypto.subtle.decrypt.mockResolvedValue(decryptedBuffer);
-      
+
       // Mock TextDecoder
       const mockDecoder = {
         decode: jest.fn().mockReturnValue(expectedText)
@@ -392,7 +392,7 @@ describe('CryptoManager', () => {
       const password = 'test-password';
       const salt = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
       const mockKeyMaterial = { type: 'raw' };
-      
+
       mockCrypto.subtle.importKey.mockResolvedValue(mockKeyMaterial);
       mockCrypto.subtle.deriveKey.mockResolvedValue(mockKey);
 
@@ -450,7 +450,7 @@ describe('SecureStorageManager', () => {
 
   beforeAll(() => {
     SecureStorageManager = global.testSecureStorageManager;
-    
+
     // Mock crypto for SecureStorageManager tests
     mockCrypto = {
       subtle: {
@@ -467,7 +467,7 @@ describe('SecureStorageManager', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     global.chrome = {
       storage: {
         local: {
@@ -579,7 +579,7 @@ describe('SecureStorageManager', () => {
         .mockResolvedValueOnce({
           [testKey]: storedData
         });
-      
+
       mockCrypto.subtle.importKey.mockResolvedValue(mockEncryptionKey);
       mockCrypto.subtle.decrypt.mockResolvedValue(new ArrayBuffer(16));
 
@@ -605,7 +605,7 @@ describe('SecureStorageManager', () => {
           salt: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
         })
         .mockResolvedValueOnce({});
-      
+
       mockCrypto.subtle.importKey.mockResolvedValue(mockEncryptionKey);
 
       const result = await SecureStorageManager.decryptAndRetrieve(testKey);
@@ -630,7 +630,7 @@ describe('SecureStorageManager', () => {
         .mockResolvedValueOnce({
           [testKey]: storedData
         });
-      
+
       mockCrypto.subtle.importKey.mockResolvedValue(mockEncryptionKey);
       mockCrypto.subtle.decrypt.mockRejectedValue(new Error('Decryption failed'));
 
@@ -693,7 +693,7 @@ describe('SecureStorageManager', () => {
       };
 
       global.chrome.storage.sync.get.mockResolvedValue({ server: publicData });
-      
+
       // Mock decryption
       global.chrome.storage.local.get
         .mockResolvedValueOnce({
@@ -706,7 +706,7 @@ describe('SecureStorageManager', () => {
             iv: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
           }
         });
-      
+
       mockCrypto.subtle.importKey.mockResolvedValue({ type: 'secret' });
       mockCrypto.subtle.decrypt.mockResolvedValue(new ArrayBuffer(16));
 
@@ -732,7 +732,7 @@ describe('SecureStorageManager', () => {
       };
 
       global.chrome.storage.sync.get.mockResolvedValue({ server: publicData });
-      
+
       // Mock no encrypted data
       global.chrome.storage.local.get
         .mockResolvedValueOnce({
@@ -740,7 +740,7 @@ describe('SecureStorageManager', () => {
           salt: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
         })
         .mockResolvedValueOnce({});
-      
+
       mockCrypto.subtle.importKey.mockResolvedValue({ type: 'secret' });
 
       const result = await SecureStorageManager.getCredentials();
@@ -750,14 +750,14 @@ describe('SecureStorageManager', () => {
 
     it('should return empty object when no data exists', async () => {
       global.chrome.storage.sync.get.mockResolvedValue({});
-      
+
       global.chrome.storage.local.get
         .mockResolvedValueOnce({
           encryptionKey: [1, 2, 3, 4],
           salt: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
         })
         .mockResolvedValueOnce({});
-      
+
       mockCrypto.subtle.importKey.mockResolvedValue({ type: 'secret' });
 
       const result = await SecureStorageManager.getCredentials();

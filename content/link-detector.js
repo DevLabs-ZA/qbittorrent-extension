@@ -23,11 +23,11 @@ class TorrentLinkDetector {
 
         // Search in href attributes
         document.querySelectorAll('a[href^="magnet:"]').forEach(element => {
-            const href = element.href;
+            const {href} = element;
             if (this.magnetPattern.test(href)) {
                 magnetLinks.push({
                     url: href,
-                    element: element,
+                    element,
                     type: 'magnet',
                     name: this.extractMagnetName(href) || element.textContent.trim()
                 });
@@ -58,11 +58,11 @@ class TorrentLinkDetector {
         const torrentLinks = [];
 
         document.querySelectorAll('a[href]').forEach(element => {
-            const href = element.href;
+            const {href} = element;
             if (this.torrentPattern.test(href)) {
                 torrentLinks.push({
                     url: href,
-                    element: element,
+                    element,
                     type: 'torrent',
                     name: element.textContent.trim() || this.extractTorrentName(href)
                 });
@@ -147,7 +147,7 @@ class TorrentLinkDetector {
     sendToQBittorrent(url) {
         chrome.runtime.sendMessage({
             action: 'SEND_TORRENT',
-            url: url
+            url
         });
     }
 }

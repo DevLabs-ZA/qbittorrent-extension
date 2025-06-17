@@ -59,34 +59,34 @@ class Diagnostics {
         try {
             // Core system information
             diagnostics.system = await Diagnostics._collectSystemInfo(privacyMode);
-            
+
             // Extension information
             diagnostics.extension = await Diagnostics._collectExtensionInfo(privacyMode);
-            
+
             // Storage information
             if (includeStorage) {
                 diagnostics.storage = await Diagnostics._collectStorageInfo(privacyMode);
             }
-            
+
             // Performance metrics
             if (includePerformance) {
                 diagnostics.performance = await Diagnostics._collectPerformanceInfo();
             }
-            
+
             // Health status
             diagnostics.health = await Diagnostics._collectHealthInfo();
-            
+
             // Error statistics
             diagnostics.errors = await Diagnostics._collectErrorInfo();
-            
+
             // Logs
             if (includeLogs) {
                 diagnostics.logs = await Diagnostics._collectLogInfo(privacyMode);
             }
-            
+
             // Configuration
             diagnostics.configuration = await Diagnostics._collectConfigurationInfo(privacyMode);
-            
+
             // Connection status
             diagnostics.connectivity = await Diagnostics._collectConnectivityInfo(privacyMode);
 
@@ -259,7 +259,7 @@ class Diagnostics {
             if (typeof chrome !== 'undefined' && chrome.storage) {
                 info.available = true;
                 info.bytesInUse = await chrome.storage.local.getBytesInUse();
-                
+
                 if (chrome.storage.local.QUOTA_BYTES) {
                     info.quota = chrome.storage.local.QUOTA_BYTES;
                     info.utilizationPercent = (info.bytesInUse / info.quota) * 100;
@@ -364,7 +364,7 @@ class Diagnostics {
         try {
             if (typeof window !== 'undefined' && window.Logger) {
                 info.available = true;
-                
+
                 // Get recent logs
                 const diagnostics = await window.Logger.getDiagnostics();
                 if (diagnostics && diagnostics.recentLogs) {
@@ -396,7 +396,7 @@ class Diagnostics {
         try {
             if (typeof chrome !== 'undefined' && chrome.storage) {
                 const result = await chrome.storage.sync.get();
-                
+
                 info.server = Diagnostics._sanitizeServerConfig(result.server, privacyMode);
                 info.options = result.options || null;
                 info.advanced = result.advanced || null;
@@ -432,7 +432,7 @@ class Diagnostics {
                         signal: controller.signal,
                         cache: 'no-cache'
                     });
-                    
+
                     clearTimeout(timeoutId);
                     info.connectionTest = {
                         success: response.ok,
@@ -452,14 +452,14 @@ class Diagnostics {
                 const result = await chrome.storage.sync.get(['server']);
                 if (result.server && result.server.url && privacyMode !== Diagnostics.PRIVACY_MODES.MINIMAL) {
                     try {
-                        const serverUrl = privacyMode === Diagnostics.PRIVACY_MODES.FULL ? 
+                        const serverUrl = privacyMode === Diagnostics.PRIVACY_MODES.FULL ?
                             result.server.url : '[REDACTED]';
-                        
+
                         const response = await fetch(`${result.server.url}/api/v2/app/version`, {
                             method: 'HEAD',
                             cache: 'no-cache'
                         });
-                        
+
                         info.serverReachable = response.ok;
                         info.serverTest = {
                             url: serverUrl,
@@ -485,9 +485,9 @@ class Diagnostics {
     // Utility methods
 
     static _getBrowserInfo() {
-        if (typeof navigator === 'undefined') return null;
+        if (typeof navigator === 'undefined') {return null;}
 
-        const userAgent = navigator.userAgent;
+        const {userAgent} = navigator;
         let browser = 'Unknown';
         let version = 'Unknown';
 
@@ -513,7 +513,7 @@ class Diagnostics {
     }
 
     static _getPlatformInfo() {
-        if (typeof navigator === 'undefined') return null;
+        if (typeof navigator === 'undefined') {return null;}
 
         return {
             platform: navigator.platform,
@@ -535,7 +535,7 @@ class Diagnostics {
     }
 
     static _getTimingInfo() {
-        if (typeof performance === 'undefined') return null;
+        if (typeof performance === 'undefined') {return null;}
 
         return {
             now: performance.now(),
@@ -567,13 +567,13 @@ class Diagnostics {
         }
 
         const sanitized = { ...log };
-        
+
         if (privacyMode !== Diagnostics.PRIVACY_MODES.FULL) {
             // Remove sensitive context data
             if (sanitized.context) {
                 sanitized.context = Diagnostics._sanitizeObject(sanitized.context);
             }
-            
+
             // Sanitize error details
             if (sanitized.error && sanitized.error.stack) {
                 sanitized.error.stack = '[REDACTED]';
@@ -584,17 +584,17 @@ class Diagnostics {
     }
 
     static _sanitizeServerConfig(serverConfig, privacyMode) {
-        if (!serverConfig) return null;
+        if (!serverConfig) {return null;}
 
         if (privacyMode === Diagnostics.PRIVACY_MODES.MINIMAL) {
             return {
-                configured: !!serverConfig.url,
+                configured: Boolean(serverConfig.url),
                 useHttps: serverConfig.useHttps
             };
         }
 
         const sanitized = { ...serverConfig };
-        
+
         if (privacyMode !== Diagnostics.PRIVACY_MODES.FULL) {
             if (sanitized.url) {
                 try {
@@ -612,13 +612,13 @@ class Diagnostics {
     }
 
     static _sanitizeObject(obj) {
-        if (!obj || typeof obj !== 'object') return obj;
+        if (!obj || typeof obj !== 'object') {return obj;}
 
         const sanitized = {};
-        
+
         for (const [key, value] of Object.entries(obj)) {
             const keyLower = key.toLowerCase();
-            const shouldRedact = Diagnostics.SENSITIVE_FIELDS.some(field => 
+            const shouldRedact = Diagnostics.SENSITIVE_FIELDS.some(field =>
                 keyLower.includes(field)
             );
 

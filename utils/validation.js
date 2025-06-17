@@ -18,7 +18,7 @@
  * }
  */
 class InputValidator {
-    
+
     /**
      * Sanitizes HTML content to prevent XSS attacks
      * Removes all HTML tags and decodes common HTML entities
@@ -36,18 +36,37 @@ class InputValidator {
      * // Returns: 'Safe <text>'
      */
     static sanitizeHtml(input) {
-        if (typeof input !== 'string') return '';
+        if (typeof input !== 'string') {return '';}
+
+        // Secure HTML sanitization - strip all HTML tags and decode entities safely
+        // Step 1: Remove all HTML/XML tags completely
+        let sanitized = input.replace(/<[^>]*>/g, '');
         
-        // Remove HTML tags and decode entities
-        const div = document.createElement('div');
-        div.textContent = input;
-        return div.innerHTML
-            .replace(/&lt;/g, '<')
-            .replace(/&gt;/g, '>')
-            .replace(/&quot;/g, '"')
-            .replace(/&#x27;/g, "'")
-            .replace(/&#x2F;/g, '/')
-            .replace(/&amp;/g, '&');
+        // Step 2: Decode common HTML entities safely without DOM manipulation
+        const entityMap = {
+            '&lt;': '<',
+            '&gt;': '>',
+            '&quot;': '"',
+            '&#x27;': "'",
+            '&#39;': "'",
+            '&#x2F;': '/',
+            '&#47;': '/',
+            '&amp;': '&' // Must be last to avoid double-decoding
+        };
+        
+        // Apply entity decoding in safe order
+        Object.entries(entityMap).forEach(([entity, char]) => {
+            sanitized = sanitized.replace(new RegExp(entity, 'g'), char);
+        });
+        
+        // Step 3: Remove any remaining suspicious patterns
+        sanitized = sanitized
+            .replace(/javascript:/gi, '') // Remove javascript: protocol
+            .replace(/data:/gi, '') // Remove data: protocol
+            .replace(/vbscript:/gi, '') // Remove vbscript: protocol
+            .replace(/on\w+\s*=/gi, ''); // Remove event handlers like onclick=
+        
+        return sanitized.trim();
     }
 
     /**
@@ -67,8 +86,8 @@ class InputValidator {
      * // Returns: ''
      */
     static sanitizeUrl(url) {
-        if (typeof url !== 'string') return '';
-        
+        if (typeof url !== 'string') {return '';}
+
         try {
             const parsed = new URL(url);
             // Only allow http and https protocols
@@ -99,8 +118,8 @@ class InputValidator {
      * // Returns: false
      */
     static validateMagnetLink(magnetUrl) {
-        if (typeof magnetUrl !== 'string') return false;
-        
+        if (typeof magnetUrl !== 'string') {return false;}
+
         const magnetPattern = /^magnet:\?xt=urn:btih:[a-fA-F0-9]{32,40}(&[^&=]*=[^&]*)*$/;
         return magnetPattern.test(magnetUrl);
     }
@@ -123,8 +142,8 @@ class InputValidator {
      * // Returns: false
      */
     static validateTorrentUrl(url) {
-        if (typeof url !== 'string') return false;
-        
+        if (typeof url !== 'string') {return false;}
+
         try {
             const parsed = new URL(url);
             if (!['http:', 'https:'].includes(parsed.protocol)) {
@@ -152,8 +171,8 @@ class InputValidator {
      * // Returns: false
      */
     static validateServerUrl(url) {
-        if (typeof url !== 'string') return false;
-        
+        if (typeof url !== 'string') {return false;}
+
         try {
             const parsed = new URL(url);
             if (!['http:', 'https:'].includes(parsed.protocol)) {
@@ -185,8 +204,8 @@ class InputValidator {
      * // Returns: 'etcpasswd'
      */
     static sanitizeFilename(filename) {
-        if (typeof filename !== 'string') return '';
-        
+        if (typeof filename !== 'string') {return '';}
+
         // Remove dangerous characters and limit length
         return filename
             .replace(/[<>:"/\\|?*]/g, '')
@@ -212,8 +231,8 @@ class InputValidator {
      * // Returns: 'Software_2024'
      */
     static sanitizeCategory(category) {
-        if (typeof category !== 'string') return '';
-        
+        if (typeof category !== 'string') {return '';}
+
         // Category names should be alphanumeric with limited special chars
         return category
             .replace(/[^a-zA-Z0-9_\-\s]/g, '')
@@ -238,8 +257,8 @@ class InputValidator {
      * // Returns: 'etcpasswd'
      */
     static sanitizePath(path) {
-        if (typeof path !== 'string') return '';
-        
+        if (typeof path !== 'string') {return '';}
+
         // Basic path sanitization - remove dangerous sequences
         return path
             .replace(/\.\./g, '') // Remove directory traversal
@@ -325,8 +344,8 @@ class InputValidator {
      * // Returns: 'user@domain.com'
      */
     static sanitizeUsername(username) {
-        if (typeof username !== 'string') return '';
-        
+        if (typeof username !== 'string') {return '';}
+
         // Basic username sanitization
         return username
             .replace(/[<>&"']/g, '') // Remove HTML chars
@@ -543,7 +562,7 @@ class RateLimiter {
         }
 
         const requests = this.requests.get(key);
-        
+
         // Remove old requests outside the window
         const validRequests = requests.filter(timestamp => timestamp > windowStart);
         this.requests.set(key, validRequests);

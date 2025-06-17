@@ -25,7 +25,7 @@ function initializeDetector() {
 }
 
 function scanForTorrents() {
-    if (!detector) return;
+    if (!detector) {return;}
 
     try {
         detector.addLinkIndicators();
@@ -36,7 +36,7 @@ function scanForTorrents() {
 }
 
 function setupMutationObserver() {
-    if (observerActive || !detector) return;
+    if (observerActive || !detector) {return;}
 
     const observer = new MutationObserver((mutations) => {
         let shouldRescan = false;
@@ -76,10 +76,10 @@ function setupMutationObserver() {
 function setupClickHandlers() {
     // Handle clicks on magnet and torrent links
     document.addEventListener('click', (event) => {
-        const target = event.target;
+        const {target} = event;
 
         if (target.tagName === 'A') {
-            const href = target.href;
+            const {href} = target;
 
             if (href && (href.startsWith('magnet:') || href.includes('.torrent'))) {
                 // Check if user wants auto-download
@@ -99,7 +99,7 @@ function setupClickHandlers() {
 }
 
 function updateBadge() {
-    if (!detector) return;
+    if (!detector) {return;}
 
     const torrentCount = detector.detectAllLinks().length;
 

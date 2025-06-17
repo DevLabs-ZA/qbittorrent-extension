@@ -63,7 +63,7 @@ describe('Extension Performance Tests', () => {
   describe('Memory Usage Tests', () => {
     it('should monitor memory usage during link detection', () => {
       const initialMemory = mockPerformance.memory.usedJSHeapSize;
-      
+
       // Simulate creating many DOM elements for link detection
       const mockElements = Array.from({ length: 1000 }, (_, i) => ({
         href: `magnet:?xt=urn:btih:${i.toString().padStart(40, '0')}`,
@@ -78,7 +78,7 @@ describe('Extension Performance Tests', () => {
 
       // Memory usage should be reasonable (less than 1KB per element)
       expect(averageMemoryPerElement).toBeLessThan(1024);
-      
+
       // Total memory should not exceed 50% of heap limit
       const memoryUsagePercentage = mockPerformance.memory.usedJSHeapSize / mockPerformance.memory.jsHeapSizeLimit;
       expect(memoryUsagePercentage).toBeLessThan(0.5);
@@ -86,10 +86,10 @@ describe('Extension Performance Tests', () => {
 
     it('should handle memory cleanup after processing', () => {
       const initialMemory = mockPerformance.memory.usedJSHeapSize;
-      
+
       // Simulate processing and cleanup
       mockPerformance.memory.usedJSHeapSize = initialMemory + 100000; // Add 100KB
-      
+
       // Simulate cleanup
       setTimeout(() => {
         mockPerformance.memory.usedJSHeapSize = initialMemory + 10000; // Should reduce to ~10KB
@@ -112,11 +112,11 @@ describe('Extension Performance Tests', () => {
 
       // Simulate initialization
       const initStart = mockPerformance.now();
-      
+
       // Mock initialization tasks
       await mockChrome.storage.sync.get();
       mockChrome.runtime.onMessage.addListener(() => {});
-      
+
       const initEnd = mockPerformance.now();
       const initTime = initEnd - initStart;
 
@@ -131,11 +131,11 @@ describe('Extension Performance Tests', () => {
       };
 
       const startTime = mockPerformance.now();
-      
+
       mockChrome.storage.sync.get.mockResolvedValue(mockSettings);
-      
+
       const settings = await mockChrome.storage.sync.get();
-      
+
       const endTime = mockPerformance.now();
       const loadTime = endTime - startTime;
 
@@ -147,7 +147,7 @@ describe('Extension Performance Tests', () => {
   describe('Bulk Operations Performance', () => {
     it('should handle multiple torrent detection efficiently', async () => {
       const torrentCount = 100;
-      const mockTorrents = Array.from({ length: torrentCount }, (_, i) => 
+      const mockTorrents = Array.from({ length: torrentCount }, (_, i) =>
         `magnet:?xt=urn:btih:${i.toString().padStart(40, '0')}&dn=Torrent${i}`
       );
 
@@ -194,10 +194,10 @@ describe('Extension Performance Tests', () => {
     });
 
     it('should efficiently process large text content for magnet links', () => {
-      const largeText = 'Here are some magnet links: ' + 
-        Array.from({ length: 50 }, (_, i) => 
+      const largeText = `Here are some magnet links: ${
+        Array.from({ length: 50 }, (_, i) =>
           `magnet:?xt=urn:btih:${i.toString().padStart(40, '0')}&dn=Torrent${i}`
-        ).join(' and ') + ' end of text.';
+        ).join(' and ')} end of text.`;
 
       const startTime = mockPerformance.now();
 
@@ -337,7 +337,7 @@ describe('Extension Performance Tests', () => {
   describe('Network Performance Tests', () => {
     it('should handle API timeouts gracefully', async () => {
       const timeoutMs = 5000;
-      
+
       // Mock slow response
       const slowResponse = new Promise((resolve) => {
         setTimeout(() => resolve({
@@ -354,7 +354,7 @@ describe('Extension Performance Tests', () => {
         // This would timeout in real implementation
         await Promise.race([
           global.fetch('http://slow-server.com/api'),
-          new Promise((_, reject) => 
+          new Promise((_, reject) =>
             setTimeout(() => reject(new Error('Timeout')), 1000)
           )
         ]);
@@ -374,15 +374,15 @@ describe('Extension Performance Tests', () => {
         result: { name: `Torrent ${i}` }
       }));
 
-      mockChrome.runtime.sendMessage.mockImplementation((message) => {
+      mockChrome.runtime.sendMessage.mockImplementation((message) =>
         // Simulate slight delay for each request
-        return new Promise(resolve => {
+         new Promise(resolve => {
           setTimeout(() => {
             const index = parseInt(message.url.slice(-1));
             resolve(mockResponses[index] || mockResponses[0]);
           }, 10);
-        });
-      });
+        })
+      );
 
       const startTime = mockPerformance.now();
 
@@ -415,7 +415,7 @@ describe('Extension Performance Tests', () => {
 
       // Add event listener
       mockElement.addEventListener('click', eventHandler);
-      
+
       // Simulate cleanup
       mockElement.removeEventListener('click', eventHandler);
 
@@ -425,7 +425,7 @@ describe('Extension Performance Tests', () => {
 
     it('should clean up timers and intervals', () => {
       const timers = [];
-      
+
       // Mock timer functions
       global.setTimeout = jest.fn((fn, delay) => {
         const id = timers.length;

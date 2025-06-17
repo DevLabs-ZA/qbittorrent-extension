@@ -255,9 +255,9 @@ describe('InputValidator', () => {
         textContent: '',
         innerHTML: '&lt;script&gt;alert("xss")&lt;/script&gt;'
       };
-      
+
       global.document.createElement.mockReturnValue(mockDiv);
-      
+
       const result = InputValidator.sanitizeHtml('<script>alert("xss")</script>');
       expect(result).toBe('<script>alert("xss")</script>');
     });
@@ -272,9 +272,9 @@ describe('InputValidator', () => {
         textContent: '',
         innerHTML: '&lt;div&gt;Test &amp; Example&lt;/div&gt;'
       };
-      
+
       global.document.createElement.mockReturnValue(mockDiv);
-      
+
       const result = InputValidator.sanitizeHtml('test');
       expect(result).toBe('<div>Test & Example</div>');
     });
@@ -481,7 +481,7 @@ describe('InputValidator', () => {
     });
 
     it('should limit length to 500 characters', () => {
-      const longPath = '/path/' + 'a'.repeat(600);
+      const longPath = `/path/${'a'.repeat(600)}`;
       const result = InputValidator.sanitizePath(longPath);
       expect(result.length).toBe(500);
     });
@@ -665,7 +665,7 @@ describe('RateLimiter', () => {
       for (let i = 0; i < 5; i++) {
         expect(rateLimiter.isAllowed('user1', 5, 60000)).toBe(true);
       }
-      
+
       // This should be rejected
       expect(rateLimiter.isAllowed('user1', 5, 60000)).toBe(false);
     });
@@ -675,7 +675,7 @@ describe('RateLimiter', () => {
       for (let i = 0; i < 5; i++) {
         expect(rateLimiter.isAllowed('user1', 5, 60000)).toBe(true);
       }
-      
+
       // user2 should still be allowed
       expect(rateLimiter.isAllowed('user2', 5, 60000)).toBe(true);
     });
@@ -685,13 +685,13 @@ describe('RateLimiter', () => {
       for (let i = 0; i < 5; i++) {
         expect(rateLimiter.isAllowed('user1', 5, 60000)).toBe(true);
       }
-      
+
       // Should be rejected
       expect(rateLimiter.isAllowed('user1', 5, 60000)).toBe(false);
-      
+
       // Advance time past window
       jest.advanceTimersByTime(61000);
-      
+
       // Should be allowed again
       expect(rateLimiter.isAllowed('user1', 5, 60000)).toBe(true);
     });
@@ -701,7 +701,7 @@ describe('RateLimiter', () => {
       for (let i = 0; i < 10; i++) {
         expect(rateLimiter.isAllowed('user1')).toBe(true);
       }
-      
+
       expect(rateLimiter.isAllowed('user1')).toBe(false);
     });
   });
@@ -712,13 +712,13 @@ describe('RateLimiter', () => {
       for (let i = 0; i < 5; i++) {
         rateLimiter.isAllowed('user1', 5, 60000);
       }
-      
+
       // Should be rejected
       expect(rateLimiter.isAllowed('user1', 5, 60000)).toBe(false);
-      
+
       // Clear the key
       rateLimiter.clear('user1');
-      
+
       // Should be allowed again
       expect(rateLimiter.isAllowed('user1', 5, 60000)).toBe(true);
     });
@@ -731,14 +731,14 @@ describe('RateLimiter', () => {
         rateLimiter.isAllowed('user1', 5, 60000);
         rateLimiter.isAllowed('user2', 5, 60000);
       }
-      
+
       // Both should be rejected
       expect(rateLimiter.isAllowed('user1', 5, 60000)).toBe(false);
       expect(rateLimiter.isAllowed('user2', 5, 60000)).toBe(false);
-      
+
       // Clear all
       rateLimiter.clearAll();
-      
+
       // Both should be allowed again
       expect(rateLimiter.isAllowed('user1', 5, 60000)).toBe(true);
       expect(rateLimiter.isAllowed('user2', 5, 60000)).toBe(true);

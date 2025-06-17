@@ -62,7 +62,7 @@ class Logger {
         this.performanceBuffer = [];
         this.logBuffer = [];
         this.isDebugMode = false;
-        
+
         Logger._instance = this;
         this._initializeAsync();
     }
@@ -83,20 +83,25 @@ class Logger {
      * @private
      */
     async _initializeAsync() {
-        if (Logger._initialized) return;
+        // Atomic check to prevent concurrent initialization
+        if (Logger._initialized) {return;}
+        
+        // Set flag immediately to prevent race conditions
+        Logger._initialized = true;
 
         try {
             await this._loadSettings();
             await this._setupStorage();
             await this._cleanupOldLogs();
             this._startPeriodicTasks();
-            
-            Logger._initialized = true;
-            this.info('Logger initialized', { 
+
+            this.info('Logger initialized', {
                 settings: this.settings,
                 timestamp: new Date().toISOString()
             });
         } catch (error) {
+            // Reset flag on failure to allow retry
+            Logger._initialized = false;
             console.error('Logger initialization failed:', error);
         }
     }
@@ -117,7 +122,7 @@ class Logger {
             // Check if debug mode is enabled
             const advancedSettings = await this._getAdvancedSettings();
             this.isDebugMode = advancedSettings?.debugLogging || false;
-            
+
             if (this.isDebugMode) {
                 this.settings.logLevel = Logger.LOG_LEVELS.DEBUG;
                 this.settings.enableConsoleOutput = true;
@@ -151,7 +156,7 @@ class Logger {
             if (typeof chrome !== 'undefined' && chrome.storage) {
                 const keys = Object.values(Logger.STORAGE_KEYS);
                 const result = await chrome.storage.local.get(keys);
-                
+
                 // Initialize empty arrays if they don't exist
                 const updates = {};
                 keys.forEach(key => {
@@ -159,7 +164,7 @@ class Logger {
                         updates[key] = [];
                     }
                 });
-                
+
                 if (Object.keys(updates).length > 0) {
                     await chrome.storage.local.set(updates);
                 }
@@ -177,15 +182,15 @@ class Logger {
         try {
             const cutoffDate = new Date();
             cutoffDate.setDate(cutoffDate.getDate() - this.settings.retentionDays);
-            
+
             if (typeof chrome !== 'undefined' && chrome.storage) {
                 const result = await chrome.storage.local.get([Logger.STORAGE_KEYS.LOGS]);
                 const logs = result[Logger.STORAGE_KEYS.LOGS] || [];
-                
-                const filteredLogs = logs.filter(log => 
+
+                const filteredLogs = logs.filter(log =>
                     new Date(log.timestamp) > cutoffDate
                 );
-                
+
                 if (filteredLogs.length !== logs.length) {
                     await chrome.storage.local.set({
                         [Logger.STORAGE_KEYS.LOGS]: filteredLogs
@@ -204,13 +209,13 @@ class Logger {
     _startPeriodicTasks() {
         // Flush logs every 30 seconds
         setInterval(() => this._flushLogs(), 30000);
-        
+
         // Cleanup and health check every 5 minutes
         setInterval(() => {
             this._cleanupOldLogs();
             this._performHealthCheck();
         }, 5 * 60 * 1000);
-        
+
         // Storage size check every 10 minutes
         setInterval(() => this._checkStorageSize(), 10 * 60 * 1000);
     }
@@ -257,7 +262,7 @@ class Logger {
      * @private
      */
     _log(level, message, error = null, context = {}) {
-        if (level > this.settings.logLevel) return;
+        if (level > this.settings.logLevel) {return;}
 
         const logEntry = {
             id: this._generateId(),
@@ -299,7 +304,7 @@ class Logger {
     _startTimer(operation, context = {}) {
         const timerId = this._generateId();
         const startTime = performance.now();
-        
+
         this.timers.set(timerId, {
             operation,
             startTime,
@@ -312,7 +317,7 @@ class Logger {
                 if (timer) {
                     const duration = performance.now() - timer.startTime;
                     this.timers.delete(timerId);
-                    
+
                     this._recordPerformance(timer.operation, duration, {
                         ...timer.context,
                         ...additionalContext
@@ -327,7 +332,7 @@ class Logger {
      * @private
      */
     _recordPerformance(operation, duration, context = {}) {
-        if (!this.settings.enablePerformanceLogging) return;
+        if (!this.settings.enablePerformanceLogging) {return;}
 
         const metric = {
             id: this._generateId(),
@@ -339,7 +344,7 @@ class Logger {
         };
 
         this.performanceBuffer.push(metric);
-        
+
         // Log slow operations
         if (duration > 1000) { // > 1 second
             this.warn(`Slow operation detected: ${operation}`, {
@@ -360,7 +365,7 @@ class Logger {
     }
 
     _recordHealth(component, healthy, metrics = {}) {
-        if (!this.settings.enableHealthMonitoring) return;
+        if (!this.settings.enableHealthMonitoring) {return;}
 
         const healthEntry = {
             id: this._generateId(),
@@ -371,7 +376,7 @@ class Logger {
         };
 
         this.healthMetrics.set(component, healthEntry);
-        
+
         if (!healthy) {
             this.error(`Health check failed for ${component}`, null, metrics);
         }
@@ -420,7 +425,7 @@ class Logger {
         const logger = Logger.getInstance();
         const diagnostics = await logger._getDiagnostics();
         const allLogs = await logger._getAllLogs();
-        
+
         return {
             exportDate: new Date().toISOString(),
             extensionVersion: logger._getExtensionVersion(),
@@ -437,14 +442,14 @@ class Logger {
     static async updateSettings(newSettings) {
         const logger = Logger.getInstance();
         logger.settings = { ...logger.settings, ...newSettings };
-        
+
         try {
             if (typeof chrome !== 'undefined' && chrome.storage) {
                 await chrome.storage.local.set({
                     [Logger.STORAGE_KEYS.SETTINGS]: logger.settings
                 });
             }
-            
+
             logger.info('Logger settings updated', { settings: newSettings });
         } catch (error) {
             logger.error('Failed to save logger settings', error);
@@ -456,25 +461,25 @@ class Logger {
      * @private
      */
     async _flushLogs() {
-        if (this.logBuffer.length === 0) return;
+        if (this.logBuffer.length === 0) {return;}
 
         try {
             if (typeof chrome !== 'undefined' && chrome.storage) {
                 const result = await chrome.storage.local.get([Logger.STORAGE_KEYS.LOGS]);
                 const existingLogs = result[Logger.STORAGE_KEYS.LOGS] || [];
-                
+
                 const allLogs = [...existingLogs, ...this.logBuffer];
-                
+
                 // Enforce max entries limit
                 if (allLogs.length > this.settings.maxLogEntries) {
                     allLogs.splice(0, allLogs.length - this.settings.maxLogEntries);
                 }
-                
+
                 await chrome.storage.local.set({
                     [Logger.STORAGE_KEYS.LOGS]: allLogs
                 });
             }
-            
+
             this.logBuffer = [];
         } catch (error) {
             console.error('Failed to flush logs:', error);
@@ -490,16 +495,16 @@ class Logger {
             // Check storage availability
             const storageHealthy = await this._checkStorageHealth();
             this._recordHealth('storage', storageHealthy);
-            
+
             // Check memory usage
             const memoryUsage = this._getMemoryUsage();
             const memoryHealthy = !memoryUsage || memoryUsage.usedJSHeapSize < 50 * 1024 * 1024; // 50MB
             this._recordHealth('memory', memoryHealthy, { memoryUsage });
-            
+
             // Check extension context
             const extensionHealthy = typeof chrome !== 'undefined' && chrome.runtime && !chrome.runtime.lastError;
             this._recordHealth('extension_context', extensionHealthy);
-            
+
         } catch (error) {
             this.error('Health check failed', error);
         }
@@ -514,11 +519,11 @@ class Logger {
             if (typeof chrome !== 'undefined' && chrome.storage) {
                 const testKey = 'health_check_test';
                 const testValue = Date.now().toString();
-                
+
                 await chrome.storage.local.set({ [testKey]: testValue });
                 const result = await chrome.storage.local.get([testKey]);
                 await chrome.storage.local.remove([testKey]);
-                
+
                 return result[testKey] === testValue;
             }
             return false;
@@ -536,13 +541,13 @@ class Logger {
             if (typeof chrome !== 'undefined' && chrome.storage) {
                 const bytesInUse = await chrome.storage.local.getBytesInUse();
                 const maxBytes = this.settings.maxStorageMB * 1024 * 1024;
-                
+
                 if (bytesInUse > maxBytes) {
                     this.warn('Storage size limit exceeded, performing cleanup', {
                         bytesInUse,
                         maxBytes
                     });
-                    
+
                     await this._performStorageCleanup();
                 }
             }
@@ -560,14 +565,14 @@ class Logger {
             // Remove old logs first
             const result = await chrome.storage.local.get([Logger.STORAGE_KEYS.LOGS]);
             const logs = result[Logger.STORAGE_KEYS.LOGS] || [];
-            
+
             // Keep only the most recent 50% of logs
             const reducedLogs = logs.slice(-Math.floor(logs.length * 0.5));
-            
+
             await chrome.storage.local.set({
                 [Logger.STORAGE_KEYS.LOGS]: reducedLogs
             });
-            
+
             this.info('Storage cleanup completed', {
                 originalCount: logs.length,
                 reducedCount: reducedLogs.length
@@ -584,32 +589,32 @@ class Logger {
     }
 
     _detectComponent() {
-        const stack = new Error().stack;
-        if (!stack) return 'unknown';
-        
+        const {stack} = new Error();
+        if (!stack) {return 'unknown';}
+
         const lines = stack.split('\n');
         for (const line of lines) {
-            if (line.includes('background/')) return 'background';
-            if (line.includes('content/')) return 'content';
-            if (line.includes('popup/')) return 'popup';
-            if (line.includes('options/')) return 'options';
+            if (line.includes('background/')) {return 'background';}
+            if (line.includes('content/')) {return 'content';}
+            if (line.includes('popup/')) {return 'popup';}
+            if (line.includes('options/')) {return 'options';}
         }
         return 'unknown';
     }
 
     _sanitizeContext(context) {
-        if (!context || typeof context !== 'object') return {};
-        
+        if (!context || typeof context !== 'object') {return {};}
+
         // Remove sensitive data
         const sanitized = { ...context };
         const sensitiveKeys = ['password', 'token', 'key', 'secret', 'auth'];
-        
+
         Object.keys(sanitized).forEach(key => {
             if (sensitiveKeys.some(sensitive => key.toLowerCase().includes(sensitive))) {
                 sanitized[key] = '[REDACTED]';
             }
         });
-        
+
         return sanitized;
     }
 
@@ -748,7 +753,7 @@ class Logger {
         const { level, message, context, error } = logEntry;
         const timestamp = new Date(logEntry.timestamp).toLocaleTimeString();
         const prefix = `[${timestamp}] [${level}] [${logEntry.component}]`;
-        
+
         switch (level) {
             case 'ERROR':
                 console.error(prefix, message, error || '', context);
