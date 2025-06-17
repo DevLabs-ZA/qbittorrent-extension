@@ -1,11 +1,34 @@
 // Import scripts for Manifest V3
-importScripts('utils/crypto.js', 'utils/validation.js', 'background/api-client.js');
+importScripts(
+    'utils/constants.js',
+    'utils/crypto.js',
+    'utils/validation.js',
+    'utils/logger.js',
+    'utils/error-handler.js',
+    'utils/monitor.js',
+    'utils/diagnostics.js',
+    'background/api-client.js'
+);
+
+/* global Logger, Monitor, ErrorHandler, ApiClient, Validator, Diagnostics */
 
 // Initialize rate limiter
 const rateLimiter = new RateLimiter();
 
+// Initialize logging and monitoring
+// Initialize logging and monitoring (use global window references in service worker)
+if (typeof Logger !== 'undefined') {
+    Logger.info('Background service worker loaded');
+}
+if (typeof Monitor !== 'undefined') {
+    Monitor.start();
+}
+
 // Initialize extension
 chrome.runtime.onInstalled.addListener(() => {
+    if (typeof Logger !== 'undefined') {
+        Logger.info('Extension installed/reloaded');
+    }
     // Create context menus
     chrome.contextMenus.create({
         id: 'send-to-qbittorrent',
@@ -51,10 +74,25 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 async function handleMessage(message, sender, sendResponse) {
+    const timer = window.Logger ? window.Logger.startTimer('message_handling') : null;
+    
     try {
+        // Log incoming message
+        if (window.Logger) {
+            window.Logger.debug('Message received', {
+                action: message.action,
+                sender: sender.tab ? 'content_script' : 'popup',
+                tabId: sender.tab?.id,
+                url: sender.tab?.url
+            });
+        }
+
         // Rate limiting - prevent abuse
         const senderKey = sender.tab ? sender.tab.id.toString() : 'popup';
         if (!rateLimiter.isAllowed(senderKey, 20, 60000)) { // 20 requests per minute
+            if (window.Logger) {
+                window.Logger.warn('Rate limit exceeded', { senderKey, action: message.action });
+            }
             sendResponse({ success: false, error: 'Rate limit exceeded' });
             return;
         }
@@ -88,8 +126,23 @@ async function handleMessage(message, sender, sendResponse) {
                 sendResponse({ success: false, error: 'Unknown action' });
         }
     } catch (error) {
-        console.error('Background script error:', error);
-        sendResponse({ success: false, error: error.message });
+        // Handle error with comprehensive logging
+        if (window.ErrorHandler) {
+            const errorInfo = window.ErrorHandler.handle(error, null, {
+                action: message.action,
+                sender: sender.tab ? 'content_script' : 'popup',
+                tabId: sender.tab?.id
+            });
+            sendResponse({ success: false, error: errorInfo.message });
+        } else {
+            console.error('Background script error:', error);
+            sendResponse({ success: false, error: error.message });
+        }
+    } finally {
+        // End performance timer
+        if (timer) {
+            timer.end({ action: message.action });
+        }
     }
 }
 

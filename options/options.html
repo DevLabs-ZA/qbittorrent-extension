@@ -418,6 +418,49 @@
                 </div>
             </div>
 
+            <!-- Diagnostics & Troubleshooting Section -->
+            <div class="section">
+                <h2 class="section-title">Diagnostics & Troubleshooting</h2>
+                
+                <div class="form-group">
+                    <label>System Health Status</label>
+                    <div id="health-status" class="status-indicator loading">Checking system health...</div>
+                </div>
+
+                <div class="form-group">
+                    <label>Extension Performance</label>
+                    <div id="performance-info" style="font-family: monospace; font-size: 12px; background: #f5f5f5; padding: 10px; border-radius: 4px;">
+                        Loading performance metrics...
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="log-level">Logging Level</label>
+                        <select id="log-level">
+                            <option value="0">Error</option>
+                            <option value="1">Warning</option>
+                            <option value="2" selected>Info</option>
+                            <option value="3">Debug</option>
+                        </select>
+                        <small>Controls how much information is logged</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="log-retention">Log Retention (days)</label>
+                        <input type="number" id="log-retention" min="1" max="30" value="7">
+                        <small>How long to keep log entries</small>
+                    </div>
+                </div>
+
+                <div class="button-group" style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #e0e0e0;">
+                    <button id="export-diagnostics" class="btn btn-secondary">Export Diagnostics</button>
+                    <button id="view-logs" class="btn btn-secondary">View Recent Logs</button>
+                    <button id="clear-logs" class="btn btn-secondary">Clear Logs</button>
+                    <button id="run-health-check" class="btn btn-secondary">Run Health Check</button>
+                </div>
+            </div>
+
             <!-- Action Buttons -->
             <div class="button-group">
                 <button id="save-settings" class="btn btn-primary">Save Settings</button>
@@ -435,8 +478,13 @@
     <!-- Notification area -->
     <div id="notification" class="notification hidden"></div>
 
+    <script src="../utils/constants.js"></script>
     <script src="../utils/crypto.js"></script>
     <script src="../utils/validation.js"></script>
+    <script src="../utils/logger.js"></script>
+    <script src="../utils/error-handler.js"></script>
+    <script src="../utils/monitor.js"></script>
+    <script src="../utils/diagnostics.js"></script>
     <script src="options.js"></script>
 </body>
 

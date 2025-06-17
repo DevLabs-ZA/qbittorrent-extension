@@ -1,0 +1,293 @@
+name: CI/CD Pipeline - qBittorrent Extension
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  security-audit:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run npm audit
+        run: npm audit --audit-level=moderate
+      
+      - name: Security scan with ESLint
+        run: npm run lint
+      
+      - name: Run security tests
+        run: npm run security:check
+
+  test-suite:
+    name: Test Suite
+    runs-on: ubuntu-latest
+    needs: security-audit
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run unit tests
+        run: npm run test:unit
+      
+      - name: Run integration tests
+        run: npm run test:integration
+      
+      - name: Run performance tests
+        run: npm run test:performance
+      
+      - name: Generate coverage report
+        run: npm run test:coverage
+      
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage/lcov.info
+          flags: unittests
+          name: codecov-umbrella
+
+  cross-browser-test:
+    name: Cross-Browser Testing
+    runs-on: ubuntu-latest
+    needs: test-suite
+    strategy:
+      matrix:
+        browser: [chrome, firefox, edge]
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Setup Browser (${{ matrix.browser }})
+        run: |
+          case ${{ matrix.browser }} in
+            chrome)
+              sudo apt-get update
+              sudo apt-get install -y google-chrome-stable
+              ;;
+            firefox)
+              sudo apt-get update
+              sudo apt-get install -y firefox
+              ;;
+            edge)
+              curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg
+              sudo install -o root -g root -m 644 microsoft.gpg /etc/apt/trusted.gpg.d/
+              sudo sh -c 'echo "deb [arch=amd64,arm64,armhf signed-by=/etc/apt/trusted.gpg.d/microsoft.gpg] https://packages.microsoft.com/repos/edge stable main" > /etc/apt/sources.list.d/microsoft-edge-dev.list'
+              sudo apt update
+              sudo apt install microsoft-edge-stable
+              ;;
+          esac
+      
+      - name: Run browser-specific tests
+        run: npm run test:browser:${{ matrix.browser }}
+
+  build-and-package:
+    name: Build and Package
+    runs-on: ubuntu-latest
+    needs: [security-audit, test-suite]
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Build extension
+        run: npm run build
+      
+      - name: Package extension
+        run: npm run package
+      
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: extension-build
+          path: dist/
+      
+      - name: Upload packaged extension
+        uses: actions/upload-artifact@v3
+        with:
+          name: extension-package
+          path: package/*.zip
+
+  load-testing:
+    name: Load Testing
+    runs-on: ubuntu-latest
+    needs: build-and-package
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run load tests
+        run: npm run test:load
+      
+      - name: Performance benchmarks
+        run: npm run test:benchmark
+
+  security-penetration-test:
+    name: Security Penetration Testing
+    runs-on: ubuntu-latest
+    needs: build-and-package
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Download build artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: extension-build
+          path: dist/
+      
+      - name: Run penetration tests
+        run: npm run security:pentest
+      
+      - name: Vulnerability assessment
+        run: npm run security:assess
+      
+      - name: Generate security report
+        run: npm run security:report
+
+  deployment-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [cross-browser-test, load-testing, security-penetration-test]
+    if: github.ref == 'refs/heads/develop'
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Download packaged extension
+        uses: actions/download-artifact@v3
+        with:
+          name: extension-package
+          path: package/
+      
+      - name: Deploy to Chrome Web Store (Developer)
+        env:
+          CHROME_EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID_STAGING }}
+          CHROME_CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
+          CHROME_CLIENT_SECRET: ${{ secrets.CHROME_CLIENT_SECRET }}
+          CHROME_REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN }}
+        run: |
+          npm install -g chrome-webstore-upload-cli
+          chrome-webstore-upload upload --source package/extension.zip --auto-publish
+
+  deployment-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [cross-browser-test, load-testing, security-penetration-test]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Download packaged extension
+        uses: actions/download-artifact@v3
+        with:
+          name: extension-package
+          path: package/
+      
+      - name: Deploy to Chrome Web Store
+        env:
+          CHROME_EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID_PROD }}
+          CHROME_CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
+          CHROME_CLIENT_SECRET: ${{ secrets.CHROME_CLIENT_SECRET }}
+          CHROME_REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN }}
+        run: |
+          npm install -g chrome-webstore-upload-cli
+          chrome-webstore-upload upload --source package/extension.zip --auto-publish
+      
+      - name: Deploy to Firefox Add-ons
+        env:
+          WEB_EXT_API_KEY: ${{ secrets.FIREFOX_API_KEY }}
+          WEB_EXT_API_SECRET: ${{ secrets.FIREFOX_API_SECRET }}
+        run: |
+          npm install -g web-ext
+          web-ext sign --source-dir package/ --api-key $WEB_EXT_API_KEY --api-secret $WEB_EXT_API_SECRET
+      
+      - name: Deploy to Edge Add-ons
+        env:
+          EDGE_CLIENT_ID: ${{ secrets.EDGE_CLIENT_ID }}
+          EDGE_CLIENT_SECRET: ${{ secrets.EDGE_CLIENT_SECRET }}
+        run: |
+          # Edge deployment script would go here
+          echo "Edge deployment configured"
+
+  post-deployment:
+    name: Post-Deployment Tests
+    runs-on: ubuntu-latest
+    needs: [deployment-staging]
+    if: always()
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run post-deployment health checks
+        run: npm run test:health
+      
+      - name: Monitor extension performance
+        run: npm run monitor:performance
+      
+      - name: Send deployment notification
+        if: always()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          channel: '#deployments'
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}

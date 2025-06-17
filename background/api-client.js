@@ -26,23 +26,42 @@ async function getSettings() {
 }
 
 async function authenticate() {
-    const { server } = await getSettings();
-
-    if (!server.url || !server.username) {
-        throw new Error('Server configuration not found');
-    }
-
-    // Check if we have a valid auth cookie
-    if (authCookie && (Date.now() - lastAuthTime) < AUTH_TIMEOUT) {
-        return authCookie;
-    }
-
-    const loginUrl = `${server.url}/api/v2/auth/login`;
-    const formData = new FormData();
-    formData.append('username', server.username);
-    formData.append('password', server.password || '');
-
+    const timer = window.Logger ? window.Logger.startTimer('authentication') : null;
+    
     try {
+        const { server } = await getSettings();
+
+        if (!server.url || !server.username) {
+            const error = new Error('Server configuration not found');
+            if (window.Logger) {
+                window.Logger.error('Authentication failed - no server config', error);
+            }
+            throw error;
+        }
+
+        // Check if we have a valid auth cookie
+        if (authCookie && (Date.now() - lastAuthTime) < AUTH_TIMEOUT) {
+            if (window.Logger) {
+                window.Logger.debug('Using cached authentication', {
+                    cacheAge: Date.now() - lastAuthTime
+                });
+            }
+            if (timer) timer.end({ success: true, cached: true });
+            return authCookie;
+        }
+
+        if (window.Logger) {
+            window.Logger.info('Authenticating with qBittorrent server', {
+                serverUrl: server.url,
+                username: server.username
+            });
+        }
+
+        const loginUrl = `${server.url}/api/v2/auth/login`;
+        const formData = new FormData();
+        formData.append('username', server.username);
+        formData.append('password', server.password || '');
+
         const response = await fetch(loginUrl, {
             method: 'POST',
             body: formData,
@@ -66,9 +85,28 @@ async function authenticate() {
             lastAuthTime = Date.now();
         }
 
+        if (timer) timer.end({ success: true, cached: false });
+        
+        if (window.Logger) {
+            window.Logger.info('Authentication successful', {
+                serverUrl: server.url
+            });
+        }
+
         return authCookie;
     } catch (error) {
-        console.error('Authentication error:', error);
+        if (timer) timer.end({ success: false, error: error.message });
+        
+        if (window.ErrorHandler) {
+            const { server: errorServer } = await getSettings().catch(() => ({ server: {} }));
+            window.ErrorHandler.handle(error, 'authentication', {
+                serverUrl: errorServer?.url,
+                username: errorServer?.username
+            });
+        } else {
+            console.error('Authentication error:', error);
+        }
+        
         // Don't expose internal error details
         throw new Error('Authentication failed. Please check your credentials.');
     }

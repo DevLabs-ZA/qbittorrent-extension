@@ -1,0 +1,97 @@
+MIT License
+
+Copyright (c) 2025 DevLabs ZA - qBittorrent Browser Extension
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+Third-Party Dependencies and Acknowledgments:
+
+This software includes components from the following open source projects:
+
+1. Jest Testing Framework
+   License: MIT
+   Copyright (c) Facebook, Inc. and its affiliates.
+   https://github.com/facebook/jest
+
+2. ESLint JavaScript Linter
+   License: MIT
+   Copyright (c) JS Foundation and other contributors
+   https://github.com/eslint/eslint
+
+3. Prettier Code Formatter
+   License: MIT
+   Copyright (c) James Long and contributors
+   https://github.com/prettier/prettier
+
+4. Chrome Extensions API Types
+   License: Apache-2.0
+   Copyright (c) Google Inc.
+   https://github.com/DefinitelyTyped/DefinitelyTyped
+
+5. WebExtension Polyfill
+   License: MPL-2.0
+   Copyright (c) Mozilla Foundation
+   https://github.com/mozilla/webextension-polyfill
+
+Security and Privacy Compliance:
+
+This extension is designed with security and privacy as fundamental principles:
+
+- All user credentials are encrypted using AES-256-GCM encryption
+- No personal data is transmitted to external servers beyond the configured qBittorrent instance
+- All network communications use secure protocols when available
+- Comprehensive input validation prevents XSS and injection attacks
+- Minimal browser permissions following principle of least privilege
+- Regular security audits and penetration testing protocols
+- GDPR and privacy regulation compliant data handling
+
+Browser Compatibility:
+
+This extension is tested and supported on:
+- Google Chrome (Manifest V3)
+- Microsoft Edge (Chromium-based)
+- Mozilla Firefox (with WebExtensions)
+
+Legal Disclaimers:
+
+1. This software is not affiliated with, endorsed by, or sponsored by qBittorrent or its developers.
+2. Users are responsible for ensuring their use of this software complies with applicable laws and regulations regarding torrent downloading in their jurisdiction.
+3. The developers of this extension do not endorse or encourage piracy or copyright infringement.
+4. This software is provided for legitimate use cases such as downloading open source software, personal backups, and legally distributed content.
+
+Contact Information:
+
+For security vulnerabilities, please follow responsible disclosure guidelines outlined in SECURITY.md
+For general inquiries: https://github.com/DevLabs-ZA/qbittorrent-extension/issues
+
+Data Processing and GDPR Compliance:
+
+Data Controller: DevLabs ZA
+Purpose: Browser extension functionality for qBittorrent integration
+Legal Basis: Legitimate interest (functionality provision)
+Data Retention: Local storage only, user-controlled
+Rights: Users may delete all data by removing the extension
+
+This extension processes the following data locally:
+- qBittorrent server connection details (encrypted)
+- User preferences and settings
+- Extension usage logs (optional, for debugging)
+- Torrent/magnet link URLs (temporary, for processing)
+
+No personal data is transmitted to third parties except the user's configured qBittorrent server.
