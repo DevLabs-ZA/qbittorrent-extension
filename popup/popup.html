@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <link rel="" stylesheet" href="popus.css">
+</head>
+
+<body>
+    <div class="popup-container">
+        <div class="header">
+            <img src="../icons/icon48.png" alt="qBittorrent" class="logo">
+            <h1>qBittorrent Integration</h1>
+        </div>
+
+        <div class="status-section">
+            <div class="status-item">
+                <span class="status-label">Server Status:</span>
+                <span id="connection-status" class="status-value">Checking...</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Torrents on page:</span>
+                <span id="torrent-count" class="status-value">0</span>
+            </div>
+        </div>
+
+        <div class="actions-section">
+            <button id="send-all-btn" class="action-btn primary" disabled>
+                Send All Torrents
+            </button>
+            <button id="refresh-btn" class="action-btn secondary">
+                Refresh Page Scan
+            </button>
+            <button id="test-connection-btn" class="action-btn secondary">
+                Test Connection
+            </button>
+        </div>
+
+        <div class="quick-settings">
+            <h3>Quick Settings</h3>
+
+            <div class="setting-group">
+                <label for="category-select">Category:</label>
+                <select name="category-select" id="category-select">
+                    <option value="">Default</option>
+                </select>
+            </div>
+
+            <div class="setting-group">
+                <label for="save-path-input">Save Path:</label>
+                <input type="text" name="save-path-input" id="save-path-input" placeholder="Default path">
+            </div>
+
+            <div class="setting-group checkbox-group">
+                <label>
+                    <input type="checkbox" name="paused-checkbox" id="paused-checkbox">
+                    Start paused
+                </label>
+            </div>
+        </div>
+
+        <div class="footer">
+            <button id="options-btn" class="link-btn">Options</button>
+            <span class="version">v1.0.0</span>
+        </div>
+
+        <div id="notification" class="notification hidden"></div>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+
+</html>
