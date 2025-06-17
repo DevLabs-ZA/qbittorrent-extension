@@ -9,10 +9,10 @@
         "contextMenus",
         "activeTab"
     ],
-    "host_permissions": [
-        "http://*/",
-        "https://*/"
-    ],
+    "content_security_policy": {
+        "extension_pages": "script-src 'self'; object-src 'none';"
+    },
+    "host_permissions": [],
     "background": {
         "service_worker": "background/service-worker.js"
     },

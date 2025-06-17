@@ -152,7 +152,18 @@ async function saveServerSettings() {
         useHttps: document.getElementById('use-https').checked
     };
 
-    await chrome.storage.sync.set({ server: serverSettings });
+    // Use secure storage if available
+    try {
+        if (typeof SecureStorageManager !== 'undefined') {
+            await SecureStorageManager.storeCredentials(serverSettings);
+        } else {
+            await chrome.storage.sync.set({ server: serverSettings });
+        }
+    } catch (error) {
+        console.error('Error saving server settings:', error);
+        // Fallback to regular storage
+        await chrome.storage.sync.set({ server: serverSettings });
+    }
 }
 
 async function saveSettings() {
@@ -162,7 +173,7 @@ async function saveSettings() {
         button.classList.add('loading');
         button.disabled = true;
 
-        const settings = {
+        const formData = {
             server: {
                 url: document.getElementById('server-url').value.trim(),
                 username: document.getElementById('username').value.trim(),
@@ -196,8 +207,38 @@ async function saveSettings() {
             }
         };
 
-        await chrome.storage.sync.set(settings);
-        currentSettings = settings;
+        // Validate and sanitize input data
+        const validation = InputValidator.validateFormData(formData);
+        
+        if (!validation.isValid) {
+            showNotification('error', `Validation failed: ${validation.errors.join(', ')}`);
+            return;
+        }
+
+        const settings = validation.sanitizedData;
+
+        // Use secure storage for server credentials
+        if (settings.server) {
+            try {
+                if (typeof SecureStorageManager !== 'undefined') {
+                    await SecureStorageManager.storeCredentials(settings.server);
+                } else {
+                    await chrome.storage.sync.set({ server: settings.server });
+                }
+            } catch (error) {
+                console.error('Error saving server settings:', error);
+                await chrome.storage.sync.set({ server: settings.server });
+            }
+        }
+
+        // Save other settings to sync storage
+        const syncSettings = {};
+        if (settings.options) syncSettings.options = settings.options;
+        if (settings.siteSettings) syncSettings.siteSettings = settings.siteSettings;
+        if (settings.advanced) syncSettings.advanced = settings.advanced;
+
+        await chrome.storage.sync.set(syncSettings);
+        currentSettings = { ...currentSettings, ...settings };
 
         showNotification('success', 'Settings saved successfully!');
 

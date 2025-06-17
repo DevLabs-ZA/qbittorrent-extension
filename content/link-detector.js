@@ -94,7 +94,7 @@ class TorrentLinkDetector {
         );
 
         let node;
-        while (node = walker.nextNode()) {
+        while ((node = walker.nextNode())) {
             if (node.textContent.includes('magnet:')) {
                 textNodes.push(node);
             }
@@ -108,7 +108,7 @@ class TorrentLinkDetector {
 
         links.forEach(link => {
             if (link.element && !link.element.classList.contains('qbt-detected')) {
-                this.addLinkIndicators(link.element, link.type);
+                this.addIndicator(link.element, link.type);
             }
         });
     }
@@ -119,7 +119,7 @@ class TorrentLinkDetector {
         const indicator = document.createElement('span');
         indicator.className = `qbit-indicator qbit-${type}`;
         indicator.title = `Click to send to qBittorrent (${type})`;
-        indicator.innerHTML = '⬇️';
+        indicator.textContent = '⬇️';
 
         indicator.style.cssText = `
             display: inline-block;

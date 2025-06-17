@@ -1,4 +1,8 @@
-import './api-client.js';
+// Import scripts for Manifest V3
+importScripts('utils/crypto.js', 'utils/validation.js', 'background/api-client.js');
+
+// Initialize rate limiter
+const rateLimiter = new RateLimiter();
 
 // Initialize extension
 chrome.runtime.onInstalled.addListener(() => {
@@ -48,26 +52,37 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 async function handleMessage(message, sender, sendResponse) {
     try {
+        // Rate limiting - prevent abuse
+        const senderKey = sender.tab ? sender.tab.id.toString() : 'popup';
+        if (!rateLimiter.isAllowed(senderKey, 20, 60000)) { // 20 requests per minute
+            sendResponse({ success: false, error: 'Rate limit exceeded' });
+            return;
+        }
+
         switch (message.action) {
-            case 'SEND_TORRENT':
+            case 'SEND_TORRENT': {
                 const result = await sendTorrent(message.url, message.options);
                 sendResponse({ success: true, result });
                 break;
+            }
 
-            case 'SEND_MULTIPLE':
+            case 'SEND_MULTIPLE': {
                 const results = await sendMultipleTorrents(message.urls, message.options);
                 sendResponse({ success: true, results });
                 break;
+            }
 
-            case 'TEST_CONNECTION':
+            case 'TEST_CONNECTION': {
                 const connectionTest = await testConnection();
                 sendResponse({ success: true, connected: connectionTest });
                 break;
+            }
 
-            case 'GET_SERVER_INFO':
+            case 'GET_SERVER_INFO': {
                 const serverInfo = await getServerInfo();
                 sendResponse({ success: true, info: serverInfo });
                 break;
+            }
 
             default:
                 sendResponse({ success: false, error: 'Unknown action' });

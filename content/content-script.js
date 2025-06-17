@@ -110,20 +110,20 @@ function updateBadge() {
 }
 
 // Handle messages from background script
-chrome.runtime.onMessage.addListener((message, sender, sendReponse) => {
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     switch (message.action) {
         case 'GET_ALL_TORRENTS':
             if (detector) {
                 const torrents = detector.detectAllLinks();
-                sendReponse({ torrents: torrents.map(t => t.url) });
+                sendResponse({ torrents: torrents.map(t => t.url) });
             } else {
-                sendReponse({ torrents: [] });
+                sendResponse({ torrents: [] });
             }
             break;
 
         case 'RESCAN_PAGE':
             scanForTorrents();
-            sendReponse({ success: true });
+            sendResponse({ success: true });
             break;
     }
 });

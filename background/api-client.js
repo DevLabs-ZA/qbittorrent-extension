@@ -3,8 +3,26 @@ let lastAuthTime = 0;
 const AUTH_TIMEOUT = 30 * 60 * 1000;
 
 async function getSettings() {
-    const result = await chrome.storage.sync.get(['server', 'options']);
-    return result;
+    // Use secure storage if available, fallback to regular storage
+    let serverConfig;
+    try {
+        if (typeof SecureStorageManager !== 'undefined') {
+            serverConfig = await SecureStorageManager.getCredentials();
+        } else {
+            const result = await chrome.storage.sync.get(['server']);
+            serverConfig = result.server || {};
+        }
+    } catch (error) {
+        console.error('Error getting credentials:', error);
+        const result = await chrome.storage.sync.get(['server']);
+        serverConfig = result.server || {};
+    }
+    
+    const result = await chrome.storage.sync.get(['options']);
+    return {
+        server: serverConfig,
+        options: result.options
+    };
 }
 
 async function authenticate() {
@@ -51,7 +69,8 @@ async function authenticate() {
         return authCookie;
     } catch (error) {
         console.error('Authentication error:', error);
-        throw new Error(`Failed to authenticate: ${error.message}`);
+        // Don't expose internal error details
+        throw new Error('Authentication failed. Please check your credentials.');
     }
 }
 
@@ -71,13 +90,29 @@ async function makeAuthenticatedRequest(endpoint, options = {}) {
     const response = await fetch(url, requestOptions);
 
     if (!response.ok) {
-        throw new Error(`Request failed: ${response.status} ${response.statusText}`);
+        // Don't expose detailed server error information
+        if (response.status === 401) {
+            throw new Error('Authentication required');
+        } else if (response.status === 403) {
+            throw new Error('Access denied');
+        } else if (response.status >= 500) {
+            throw new Error('Server error occurred');
+        } else {
+            throw new Error('Request failed');
+        }
     }
 
     return response;
 }
 
 async function sendTorrent(torrentUrl, customOptions = {}) {
+    // Validate torrent URL
+    if (typeof InputValidator !== 'undefined') {
+        if (!InputValidator.validateMagnetLink(torrentUrl) && !InputValidator.validateTorrentUrl(torrentUrl)) {
+            throw new Error('Invalid torrent URL or magnet link');
+        }
+    }
+
     const { options } = await getSettings();
 
     const formData = new FormData();
@@ -88,6 +123,12 @@ async function sendTorrent(torrentUrl, customOptions = {}) {
         // Handle .torrent file URL
         const torrentResponse = await fetch(torrentUrl);
         const torrentBlob = await torrentResponse.blob();
+        
+        // Validate blob size (prevent excessively large files)
+        if (torrentBlob.size > 10 * 1024 * 1024) { // 10MB limit
+            throw new Error('Torrent file too large');
+        }
+        
         formData.append('torrents', torrentBlob, 'download.torrent');
     }
 
