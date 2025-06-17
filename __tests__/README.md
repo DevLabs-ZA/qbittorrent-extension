@@ -4,7 +4,7 @@ This directory contains the comprehensive test suite for the qBittorrent browser
 
 ## Test Structure
 
-```
+```text
 __tests__/
 ├── setup/                  # Test configuration and setup files
 │   └── jest.setup.js      # Global test setup and mocks
@@ -28,6 +28,7 @@ __tests__/
 **Purpose:** Verify that each component works correctly in isolation
 
 #### Background Scripts Tests
+
 - **API Client** (`background/api-client.test.js`)
   - Authentication flow testing
   - API endpoint calls (login, torrent management)
@@ -35,6 +36,7 @@ __tests__/
   - Rate limiting compliance
 
 #### Content Scripts Tests
+
 - **Link Detector** (`content/link-detector.test.js`)
   - Magnet link detection algorithms
   - Torrent file URL validation
@@ -42,6 +44,7 @@ __tests__/
   - Name extraction from URLs
 
 #### Utility Tests
+
 - **Validation** (`utils/validation.test.js`)
   - Input sanitization functions
   - URL validation
@@ -157,6 +160,7 @@ describe('ComponentName', () => {
 ### Testing Best Practices
 
 #### 1. **Descriptive Test Names**
+
 ```javascript
 // Good
 it('should extract torrent name from magnet URL with display name')
@@ -166,6 +170,7 @@ it('should work')
 ```
 
 #### 2. **Proper Test Isolation**
+
 ```javascript
 beforeEach(() => {
   jest.clearAllMocks();
@@ -174,6 +179,7 @@ beforeEach(() => {
 ```
 
 #### 3. **Meaningful Assertions**
+
 ```javascript
 // Good
 expect(result).toEqual({
@@ -186,6 +192,7 @@ expect(result).toBeTruthy();
 ```
 
 #### 4. **Edge Case Coverage**
+
 ```javascript
 describe('URL validation', () => {
   it('should handle valid URLs', () => { /* ... */ });
@@ -196,6 +203,7 @@ describe('URL validation', () => {
 ```
 
 #### 5. **Async Testing**
+
 ```javascript
 it('should handle API calls correctly', async () => {
   mockFetch.mockResolvedValue({ ok: true, json: () => mockData });
@@ -265,18 +273,21 @@ npx husky add .husky/pre-commit "npm run test:ci"
 ### Common Issues
 
 #### 1. **Chrome API Not Mocked**
+
 ```javascript
 // Error: chrome.someApi is not a function
 // Solution: Add mock to __tests__/setup/jest.setup.js or __mocks__/chrome.js
 ```
 
 #### 2. **Async Test Timeout**
+
 ```javascript
 // Increase timeout for slow tests
 jest.setTimeout(10000); // 10 seconds
 ```
 
 #### 3. **DOM Manipulation Tests**
+
 ```javascript
 // Ensure proper DOM setup
 document.body.innerHTML = '<div id="test-container"></div>';
