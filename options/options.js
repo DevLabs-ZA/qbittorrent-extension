@@ -267,7 +267,15 @@ async function saveSettings() {
 }
 
 async function resetSettings() {
-    if (!confirm('Are you sure you want to reset all settings to defaults? This cannot be undone.')) {
+    // Use custom secure modal instead of confirm() to prevent automation bypass
+    const userConfirmed = await showSecureConfirmDialog(
+        'Reset All Settings',
+        'Are you sure you want to reset all settings to defaults? This action cannot be undone.',
+        'Reset Settings',
+        'Cancel'
+    );
+    
+    if (!userConfirmed) {
         return;
     }
 
@@ -355,7 +363,14 @@ async function importSettings(event) {
             throw new Error('Invalid settings file format');
         }
 
-        if (!confirm('This will overwrite your current settings. Continue?')) {
+        const userConfirmed = await showSecureConfirmDialog(
+            'Import Settings',
+            'This will overwrite your current settings. Do you want to continue?',
+            'Import Settings',
+            'Cancel'
+        );
+        
+        if (!userConfirmed) {
             return;
         }
 
@@ -369,9 +384,112 @@ async function importSettings(event) {
         console.error('Error importing settings:', error);
         showNotification('error', `Failed to import settings: ${error.message}`);
     } finally {
-        // Clear the file input
-        event.target.value = '';
+        // Clear the file input safely to prevent race conditions
+        const fileInput = event.target;
+        setTimeout(() => {
+            fileInput.value = '';
+        }, 0);
     }
+}
+
+/**
+ * Secure confirmation dialog to prevent automation bypass
+ * @param {string} title - Dialog title
+ * @param {string} message - Dialog message
+ * @param {string} confirmText - Confirm button text
+ * @param {string} cancelText - Cancel button text
+ * @returns {Promise<boolean>} User's choice
+ */
+function showSecureConfirmDialog(title, message, confirmText, cancelText) {
+    return new Promise((resolve) => {
+        // Create modal overlay
+        const overlay = document.createElement('div');
+        overlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        `;
+
+        // Create modal dialog
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+            background: white;
+            border-radius: 8px;
+            padding: 24px;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        `;
+
+        // Create dialog content
+        modal.innerHTML = `
+            <h3 style="margin: 0 0 16px 0; color: #333;">${title}</h3>
+            <p style="margin: 0 0 24px 0; color: #666; line-height: 1.4;">${message}</p>
+            <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                <button id="secure-cancel" style="
+                    padding: 8px 16px;
+                    border: 1px solid #ddd;
+                    background: white;
+                    border-radius: 4px;
+                    cursor: pointer;
+                ">${cancelText}</button>
+                <button id="secure-confirm" style="
+                    padding: 8px 16px;
+                    border: 1px solid #dc3545;
+                    background: #dc3545;
+                    color: white;
+                    border-radius: 4px;
+                    cursor: pointer;
+                ">${confirmText}</button>
+            </div>
+        `;
+
+        overlay.appendChild(modal);
+        document.body.appendChild(overlay);
+
+        // Add event listeners
+        const confirmBtn = modal.querySelector('#secure-confirm');
+        const cancelBtn = modal.querySelector('#secure-cancel');
+
+        const cleanup = () => {
+            document.body.removeChild(overlay);
+        };
+
+        confirmBtn.addEventListener('click', () => {
+            cleanup();
+            resolve(true);
+        });
+
+        cancelBtn.addEventListener('click', () => {
+            cleanup();
+            resolve(false);
+        });
+
+        // Close on overlay click
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) {
+                cleanup();
+                resolve(false);
+            }
+        });
+
+        // Close on escape key
+        const handleKeydown = (e) => {
+            if (e.key === 'Escape') {
+                document.removeEventListener('keydown', handleKeydown);
+                cleanup();
+                resolve(false);
+            }
+        };
+        document.addEventListener('keydown', handleKeydown);
+    });
 }
 
 function showNotification(type, message) {
